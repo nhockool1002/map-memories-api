@@ -8,6 +8,34 @@ import (
 	"gorm.io/gorm"
 )
 
+// DateOnly represents a date in YYYY-MM-DD format
+type DateOnly struct {
+	time.Time
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (d *DateOnly) UnmarshalJSON(data []byte) error {
+	// Remove quotes
+	str := string(data)
+	if len(str) >= 2 && str[0] == '"' && str[len(str)-1] == '"' {
+		str = str[1 : len(str)-1]
+	}
+	
+	// Parse date in YYYY-MM-DD format
+	t, err := time.Parse("2006-01-02", str)
+	if err != nil {
+		return err
+	}
+	
+	d.Time = t
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler
+func (d DateOnly) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + d.Time.Format("2006-01-02") + `"`), nil
+}
+
 type Memory struct {
 	ID         uint           `json:"id" gorm:"primaryKey"`
 	UUID       uuid.UUID      `json:"uuid" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex"`
@@ -35,19 +63,19 @@ func (Memory) TableName() string {
 
 // MemoryCreateRequest represents the request for creating a memory
 type MemoryCreateRequest struct {
-	LocationID uint       `json:"location_id" validate:"required"`
-	Title      string     `json:"title" validate:"required,max=255"`
-	Content    string     `json:"content" validate:"required"`
-	VisitDate  *time.Time `json:"visit_date"`
-	IsPublic   bool       `json:"is_public"`
-	Tags       []string   `json:"tags"`
+	LocationID uint      `json:"location_id" validate:"required"`
+	Title      string    `json:"title" validate:"required,max=255"`
+	Content    string    `json:"content" validate:"required"`
+	VisitDate  *DateOnly `json:"visit_date"`
+	IsPublic   bool      `json:"is_public"`
+	Tags       []string  `json:"tags"`
 }
 
 // MemoryUpdateRequest represents the request for updating a memory
 type MemoryUpdateRequest struct {
 	Title     string     `json:"title" validate:"max=255"`
 	Content   string     `json:"content"`
-	VisitDate *time.Time `json:"visit_date"`
+	VisitDate *DateOnly  `json:"visit_date"`
 	IsPublic  bool       `json:"is_public"`
 	Tags      []string   `json:"tags"`
 }

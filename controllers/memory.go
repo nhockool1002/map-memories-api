@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"map-memories-api/database"
 	"map-memories-api/middleware"
@@ -43,6 +44,11 @@ func (mc *MemoryController) CreateMemory(c *gin.Context) {
 
 	var req models.MemoryCreateRequest
 	if err := utils.ValidateAndBindJSON(c, &req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
+			"Invalid request data",
+			"VALIDATION_ERROR",
+			err.Error(),
+		))
 		return
 	}
 
@@ -66,12 +72,17 @@ func (mc *MemoryController) CreateMemory(c *gin.Context) {
 	}
 
 	// Create memory
+	var visitDate *time.Time
+	if req.VisitDate != nil {
+		visitDate = &req.VisitDate.Time
+	}
+	
 	memory := models.Memory{
 		UserID:     userID,
 		LocationID: req.LocationID,
 		Title:      req.Title,
 		Content:    req.Content,
-		VisitDate:  req.VisitDate,
+		VisitDate:  visitDate,
 		IsPublic:   req.IsPublic,
 		Tags:       pq.StringArray(req.Tags),
 	}
@@ -335,7 +346,7 @@ func (mc *MemoryController) UpdateMemory(c *gin.Context) {
 		memory.Content = req.Content
 	}
 	if req.VisitDate != nil {
-		memory.VisitDate = req.VisitDate
+		memory.VisitDate = &req.VisitDate.Time
 	}
 	memory.IsPublic = req.IsPublic
 	if req.Tags != nil {

@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: mm_postgres_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: map_memories
+      POSTGRES_USER: mm_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - mm_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mm_user -d map_memories"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Go API Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: map-memories-api:latest
+    container_name: mm_api_prod
+    restart: unless-stopped
+    environment:
+      - ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=mm_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=map_memories
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRY=86400
+      - PORT=8080
+      - UPLOAD_PATH=/app/uploads
+      - MAX_FILE_SIZE=50MB
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - mm_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: mm_redis_prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - mm_network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: mm_nginx_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - uploads_data:/var/www/uploads:ro
+    networks:
+      - mm_network
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  mm_network:
+    driver: bridge 
