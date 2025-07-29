@@ -13,6 +13,7 @@ import (
 	"map-memories-api/config"
 	"map-memories-api/database"
 	"map-memories-api/routes"
+	_ "map-memories-api/docs"
 
 	"github.com/gin-gonic/gin"
 )
@@ -52,7 +53,7 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:8080
+// @host localhost:8222
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey BearerAuth
@@ -87,6 +88,9 @@ func main() {
 
 	// Run database migrations
 	database.AutoMigrate()
+
+	// Run database seeding
+	database.SeedData()
 
 	// Create Gin router
 	r := gin.New()

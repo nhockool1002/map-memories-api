@@ -3,7 +3,8 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgis/postgis:15-3.3
+    image: postgres:15-alpine
+    platform: linux/arm64/v8
     container_name: mm_postgres
     restart: unless-stopped
     environment:
@@ -12,7 +13,7 @@ services:
       POSTGRES_PASSWORD: mm_password
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "5222:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/migrations:/docker-entrypoint-initdb.d
@@ -43,7 +44,7 @@ services:
       - UPLOAD_PATH=/app/uploads
       - MAX_FILE_SIZE=50MB
     ports:
-      - "8080:8080"
+      - "8222:8080"
     volumes:
       - uploads_data:/app/uploads
     networks:

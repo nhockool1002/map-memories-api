@@ -7,7 +7,7 @@ Map Memories API là một RESTful API được thiết kế để quản lý k�
 ## Base URL
 
 ```
-http://localhost:8080/api/v1
+http://localhost:8222/api/v1
 ```
 
 ## Authentication
@@ -657,7 +657,7 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 ### Step 1: Đăng ký và đăng nhập
 ```bash
 # Đăng ký
-curl -X POST http://localhost:8080/api/v1/auth/register \
+curl -X POST http://localhost:8222/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "traveler",
@@ -672,7 +672,7 @@ export JWT_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 ### Step 2: Tạo địa điểm
 ```bash
-curl -X POST http://localhost:8080/api/v1/locations \
+curl -X POST http://localhost:8222/api/v1/locations \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{
@@ -691,7 +691,7 @@ export LOCATION_ID=1
 
 ### Step 3: Tạo kỷ niệm
 ```bash
-curl -X POST http://localhost:8080/api/v1/memories \
+curl -X POST http://localhost:8222/api/v1/memories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{
@@ -709,7 +709,7 @@ export MEMORY_ID=1
 
 ### Step 4: Upload hình ảnh
 ```bash
-curl -X POST http://localhost:8080/api/v1/media/upload \
+curl -X POST http://localhost:8222/api/v1/media/upload \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -F "memory_id=$MEMORY_ID" \
   -F "display_order=1" \
@@ -718,14 +718,14 @@ curl -X POST http://localhost:8080/api/v1/media/upload \
 
 ### Step 5: Tìm kiếm địa điểm gần đó
 ```bash
-curl "http://localhost:8080/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=2&limit=10"
+curl "http://localhost:8222/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=2&limit=10"
 ```
 
 ## 7.2 Error Handling Examples
 
 ### Invalid Authentication
 ```bash
-curl -X POST http://localhost:8080/api/v1/memories \
+curl -X POST http://localhost:8222/api/v1/memories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer invalid_token" \
   -d '{...}'
@@ -744,7 +744,7 @@ curl -X POST http://localhost:8080/api/v1/memories \
 
 ### Validation Error
 ```bash
-curl -X POST http://localhost:8080/api/v1/locations \
+curl -X POST http://localhost:8222/api/v1/locations \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{
@@ -832,7 +832,7 @@ API có giới hạn 60 requests/phút cho mỗi IP. Khi vượt giới hạn:
 
 ```typescript
 class MapMemoriesAPI {
-  private baseURL = 'http://localhost:8080/api/v1';
+  private baseURL = 'http://localhost:8222/api/v1';
   private token: string | null = null;
 
   async login(email: string, password: string) {
@@ -887,7 +887,7 @@ import requests
 from typing import Optional, Dict, Any
 
 class MapMemoriesClient:
-    def __init__(self, base_url: str = "http://localhost:8080/api/v1"):
+    def __init__(self, base_url: str = "http://localhost:8222/api/v1"):
         self.base_url = base_url
         self.token: Optional[str] = None
     
@@ -955,4 +955,4 @@ class MapMemoriesClient:
 
 ---
 
-Đây là tài liệu API hoàn chỉnh cho Map Memories. Để biết thêm chi tiết và test interactive, truy cập [Swagger UI](http://localhost:8080/swagger/index.html) khi service đang chạy.
+Đây là tài liệu API hoàn chỉnh cho Map Memories. Để biết thêm chi tiết và test interactive, truy cập [Swagger UI](http://localhost:8222/swagger/index.html) khi service đang chạy.

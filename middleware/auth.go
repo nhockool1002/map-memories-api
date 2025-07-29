@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"map-memories-api/models"
@@ -25,15 +26,25 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		token, err := utils.ExtractBearerToken(authHeader)
+		// Handle both "Bearer <token>" and just "<token>" formats
+		var token string
+		var err error
+		
+		// Try standard Bearer format first
+		token, err = utils.ExtractBearerToken(authHeader)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, models.ErrorResponseWithCode(
-				"Invalid authorization header format",
-				"UNAUTHORIZED",
-				nil,
-			))
-			c.Abort()
-			return
+			// If standard format fails, try treating the entire header as token
+			if strings.TrimSpace(authHeader) != "" {
+				token = strings.TrimSpace(authHeader)
+			} else {
+				c.JSON(http.StatusUnauthorized, models.ErrorResponseWithCode(
+					"Invalid authorization header format",
+					"UNAUTHORIZED",
+					nil,
+				))
+				c.Abort()
+				return
+			}
 		}
 
 		claims, err := utils.VerifyJWT(token)
@@ -140,8 +151,8 @@ func RequireOwnership() gin.HandlerFunc {
 		resourceUserID := c.Param("user_id")
 		if resourceUserID != "" {
 			// Convert to uint and compare
-			var resourceID uint
-			if resourceUserID != string(rune(userID)) {
+			resourceID, err := strconv.ParseUint(resourceUserID, 10, 32)
+			if err != nil || uint(resourceID) != userID {
 				c.JSON(http.StatusForbidden, models.ErrorResponseWithCode(
 					"Access denied: You can only access your own resources",
 					"FORBIDDEN",

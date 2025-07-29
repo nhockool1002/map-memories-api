@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"map-memories-api/config"
@@ -81,12 +82,20 @@ func ExtractBearerToken(authHeader string) (string, error) {
 		return "", errors.New("authorization header is required")
 	}
 
+	// Handle both "Bearer <token>" and just "<token>" formats
 	const bearerPrefix = "Bearer "
-	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
-		return "", errors.New("invalid authorization header format")
+	if len(authHeader) >= len(bearerPrefix) && authHeader[:len(bearerPrefix)] == bearerPrefix {
+		// Standard Bearer token format
+		return authHeader[len(bearerPrefix):], nil
 	}
 
-	return authHeader[len(bearerPrefix):], nil
+	// If no Bearer prefix, assume the entire header is the token
+	// This handles cases where Swagger UI doesn't add the prefix
+	if strings.TrimSpace(authHeader) != "" {
+		return strings.TrimSpace(authHeader), nil
+	}
+
+	return "", errors.New("invalid authorization header format")
 }
 
 // GenerateRefreshToken generates a refresh token (simple UUID for now)

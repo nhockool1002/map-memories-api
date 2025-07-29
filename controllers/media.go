@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"path/filepath"
 	"strconv"
 
 	"map-memories-api/database"
@@ -501,13 +500,13 @@ func (mc *MediaController) DeleteMedia(c *gin.Context) {
 // @Description Get all media files associated with a specific memory
 // @Tags Media
 // @Produce json
-// @Param memory_uuid path string true "Memory UUID"
+// @Param uuid path string true "Memory UUID"
 // @Success 200 {object} models.APIResponse{data=[]models.MediaResponse}
 // @Failure 404 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
-// @Router /memories/{memory_uuid}/media [get]
+// @Router /memories/{uuid}/media [get]
 func (mc *MediaController) GetMemoryMedia(c *gin.Context) {
-	memoryUuidStr := c.Param("memory_uuid")
+	memoryUuidStr := c.Param("uuid")
 	
 	// Parse UUID
 	memoryUUID, err := uuid.Parse(memoryUuidStr)

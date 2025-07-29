@@ -1,0 +1,982 @@
+MAP MEMORIES API - ENDPOINTS DOCUMENTATION
+============================================
+
+Base URL: http://localhost:8222/api/v1
+Authentication: Bearer Token (JWT)
+
+================================================================================
+1. AUTHENTICATION ENDPOINTS
+================================================================================
+
+1.1 User Registration
+- Method: POST
+- URL: /auth/register
+- Authentication: Not required
+- Description: Register a new user account
+- Request Body:
+  {
+    "username": "string (3-50 chars)",
+    "email": "string (valid email)",
+    "password": "string (min 6 chars)",
+    "full_name": "string (optional)"
+  }
+- Response: 201 Created
+  {
+    "success": true,
+    "message": "User registered successfully",
+    "data": {
+      "user": {
+        "id": 1,
+        "uuid": "uuid",
+        "username": "string",
+        "email": "string",
+        "full_name": "string",
+        "avatar_url": "string",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "access_token": "jwt_token",
+      "token_type": "Bearer",
+      "expires_in": 86400
+    }
+  }
+
+1.2 User Login
+- Method: POST
+- URL: /auth/login
+- Authentication: Not required
+- Description: Authenticate user and get access token
+- Request Body:
+  {
+    "email": "string (valid email)",
+    "password": "string"
+  }
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Login successful",
+    "data": {
+      "user": {
+        "id": 1,
+        "uuid": "uuid",
+        "username": "string",
+        "email": "string",
+        "full_name": "string",
+        "avatar_url": "string",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "access_token": "jwt_token",
+      "token_type": "Bearer",
+      "expires_in": 86400
+    }
+  }
+
+1.3 Get User Profile
+- Method: GET
+- URL: /auth/profile
+- Authentication: Required (Bearer Token)
+- Description: Get current user's profile information
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Profile retrieved successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "username": "string",
+      "email": "string",
+      "full_name": "string",
+      "avatar_url": "string",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+1.4 Update User Profile
+- Method: PUT
+- URL: /auth/profile
+- Authentication: Required (Bearer Token)
+- Description: Update current user's profile
+- Request Body:
+  {
+    "full_name": "string (optional)",
+    "avatar_url": "string (optional)"
+  }
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Profile updated successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "username": "string",
+      "email": "string",
+      "full_name": "string",
+      "avatar_url": "string",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+1.5 User Logout
+- Method: POST
+- URL: /auth/logout
+- Authentication: Required (Bearer Token)
+- Description: Logout current user (invalidate token)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Logout successful"
+  }
+
+================================================================================
+2. LOCATION ENDPOINTS
+================================================================================
+
+2.1 Get All Locations (Public)
+- Method: GET
+- URL: /locations
+- Authentication: Not required
+- Description: Get paginated list of locations
+- Query Parameters:
+  - page: integer (default: 1)
+  - limit: integer (default: 20, max: 100)
+  - search: string (search in name and description)
+  - country: string (filter by country)
+  - city: string (filter by city)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Locations retrieved successfully",
+    "data": [
+      {
+        "id": 1,
+        "uuid": "uuid",
+        "name": "string",
+        "description": "string",
+        "latitude": 10.123,
+        "longitude": 106.456,
+        "address": "string",
+        "country": "string",
+        "city": "string",
+        "memory_count": 5,
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 20,
+      "total": 100,
+      "total_pages": 5,
+      "has_next": true,
+      "has_prev": false
+    }
+  }
+
+2.2 Get Location by UUID (Public)
+- Method: GET
+- URL: /locations/{uuid}
+- Authentication: Not required
+- Description: Get specific location details
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Location retrieved successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "name": "string",
+      "description": "string",
+      "latitude": 10.123,
+      "longitude": 106.456,
+      "address": "string",
+      "country": "string",
+      "city": "string",
+      "memory_count": 5,
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+2.3 Search Nearby Locations (Public)
+- Method: GET
+- URL: /locations/nearby
+- Authentication: Not required
+- Description: Find locations within radius from coordinates
+- Query Parameters:
+  - latitude: number (required, -90 to 90)
+  - longitude: number (required, -180 to 180)
+  - radius: number (default: 10, max: 100 km)
+  - limit: integer (default: 20, max: 100)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Nearby locations found",
+    "data": [
+      {
+        "id": 1,
+        "uuid": "uuid",
+        "name": "string",
+        "description": "string",
+        "latitude": 10.123,
+        "longitude": 106.456,
+        "address": "string",
+        "country": "string",
+        "city": "string",
+        "memory_count": 5,
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      }
+    ]
+  }
+
+2.4 Get Location Memories (Public)
+- Method: GET
+- URL: /locations/{uuid}/memories
+- Authentication: Not required
+- Description: Get all memories for a specific location
+- Query Parameters:
+  - page: integer (default: 1)
+  - limit: integer (default: 20, max: 100)
+  - is_public: boolean (filter by public status)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Location memories retrieved successfully",
+    "data": [
+      {
+        "id": 1,
+        "uuid": "uuid",
+        "title": "string",
+        "content": "string",
+        "visit_date": "date",
+        "is_public": true,
+        "tags": ["tag1", "tag2"],
+        "like_count": 5,
+        "is_liked": false,
+        "media_count": 3,
+        "user": {
+          "id": 1,
+          "uuid": "uuid",
+          "username": "string",
+          "email": "string",
+          "full_name": "string",
+          "avatar_url": "string"
+        },
+        "location": {
+          "id": 1,
+          "uuid": "uuid",
+          "name": "string",
+          "latitude": 10.123,
+          "longitude": 106.456
+        },
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 20,
+      "total": 50,
+      "total_pages": 3,
+      "has_next": true,
+      "has_prev": false
+    }
+  }
+
+2.5 Create Location (Protected)
+- Method: POST
+- URL: /locations
+- Authentication: Required (Bearer Token)
+- Description: Create a new location
+- Request Body:
+  {
+    "name": "string (required, max 255 chars)",
+    "description": "string (optional)",
+    "latitude": number (required, -90 to 90),
+    "longitude": number (required, -180 to 180),
+    "address": "string (optional)",
+    "country": "string (optional)",
+    "city": "string (optional)"
+  }
+- Response: 201 Created
+  {
+    "success": true,
+    "message": "Location created successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "name": "string",
+      "description": "string",
+      "latitude": 10.123,
+      "longitude": 106.456,
+      "address": "string",
+      "country": "string",
+      "city": "string",
+      "memory_count": 0,
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+2.6 Update Location (Protected)
+- Method: PUT
+- URL: /locations/{uuid}
+- Authentication: Required (Bearer Token)
+- Description: Update location details
+- Request Body:
+  {
+    "name": "string (optional, max 255 chars)",
+    "description": "string (optional)",
+    "latitude": number (optional, -90 to 90),
+    "longitude": number (optional, -180 to 180),
+    "address": "string (optional)",
+    "country": "string (optional)",
+    "city": "string (optional)"
+  }
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Location updated successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "name": "string",
+      "description": "string",
+      "latitude": 10.123,
+      "longitude": 106.456,
+      "address": "string",
+      "country": "string",
+      "city": "string",
+      "memory_count": 5,
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+2.7 Delete Location (Admin Only)
+- Method: DELETE
+- URL: /admin/locations/{uuid}
+- Authentication: Required (Bearer Token + Admin)
+- Description: Delete a location (admin only)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Location deleted successfully"
+  }
+
+================================================================================
+3. MEMORY ENDPOINTS
+================================================================================
+
+3.1 Get All Memories (Public)
+- Method: GET
+- URL: /memories
+- Authentication: Not required
+- Description: Get paginated list of public memories
+- Query Parameters:
+  - page: integer (default: 1)
+  - limit: integer (default: 20, max: 100)
+  - search: string (search in title and content)
+  - tags: string (comma-separated tags)
+  - sort_by: string (created_at, visit_date, title)
+  - sort_order: string (asc, desc)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Memories retrieved successfully",
+    "data": [
+      {
+        "id": 1,
+        "uuid": "uuid",
+        "title": "string",
+        "content": "string",
+        "visit_date": "date",
+        "is_public": true,
+        "tags": ["tag1", "tag2"],
+        "like_count": 5,
+        "is_liked": false,
+        "media_count": 3,
+        "user": {
+          "id": 1,
+          "uuid": "uuid",
+          "username": "string",
+          "email": "string",
+          "full_name": "string",
+          "avatar_url": "string"
+        },
+        "location": {
+          "id": 1,
+          "uuid": "uuid",
+          "name": "string",
+          "latitude": 10.123,
+          "longitude": 106.456
+        },
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 20,
+      "total": 100,
+      "total_pages": 5,
+      "has_next": true,
+      "has_prev": false
+    }
+  }
+
+3.2 Get Memory by UUID (Protected)
+- Method: GET
+- URL: /memories/{uuid}
+- Authentication: Required (Bearer Token)
+- Description: Get specific memory details
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Memory retrieved successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "title": "string",
+      "content": "string",
+      "visit_date": "date",
+      "is_public": true,
+      "tags": ["tag1", "tag2"],
+      "like_count": 5,
+      "is_liked": false,
+      "media_count": 3,
+      "user": {
+        "id": 1,
+        "uuid": "uuid",
+        "username": "string",
+        "email": "string",
+        "full_name": "string",
+        "avatar_url": "string"
+      },
+      "location": {
+        "id": 1,
+        "uuid": "uuid",
+        "name": "string",
+        "latitude": 10.123,
+        "longitude": 106.456
+      },
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+3.3 Create Memory (Protected)
+- Method: POST
+- URL: /memories
+- Authentication: Required (Bearer Token)
+- Description: Create a new memory
+- Request Body:
+  {
+    "title": "string (required, max 255 chars)",
+    "content": "string (required)",
+    "location_id": integer (required),
+    "visit_date": "date (optional)",
+    "is_public": boolean (default: true),
+    "tags": ["string"] (optional)
+  }
+- Response: 201 Created
+  {
+    "success": true,
+    "message": "Memory created successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "title": "string",
+      "content": "string",
+      "visit_date": "date",
+      "is_public": true,
+      "tags": ["tag1", "tag2"],
+      "like_count": 0,
+      "is_liked": false,
+      "media_count": 0,
+      "user": {
+        "id": 1,
+        "uuid": "uuid",
+        "username": "string",
+        "email": "string",
+        "full_name": "string",
+        "avatar_url": "string"
+      },
+      "location": {
+        "id": 1,
+        "uuid": "uuid",
+        "name": "string",
+        "latitude": 10.123,
+        "longitude": 106.456
+      },
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+3.4 Update Memory (Protected)
+- Method: PUT
+- URL: /memories/{uuid}
+- Authentication: Required (Bearer Token)
+- Description: Update memory (owner only)
+- Request Body:
+  {
+    "title": "string (optional, max 255 chars)",
+    "content": "string (optional)",
+    "visit_date": "date (optional)",
+    "is_public": boolean (optional),
+    "tags": ["string"] (optional)
+  }
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Memory updated successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "title": "string",
+      "content": "string",
+      "visit_date": "date",
+      "is_public": true,
+      "tags": ["tag1", "tag2"],
+      "like_count": 5,
+      "is_liked": false,
+      "media_count": 3,
+      "user": {
+        "id": 1,
+        "uuid": "uuid",
+        "username": "string",
+        "email": "string",
+        "full_name": "string",
+        "avatar_url": "string"
+      },
+      "location": {
+        "id": 1,
+        "uuid": "uuid",
+        "name": "string",
+        "latitude": 10.123,
+        "longitude": 106.456
+      },
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+
+3.5 Delete Memory (Protected)
+- Method: DELETE
+- URL: /memories/{uuid}
+- Authentication: Required (Bearer Token)
+- Description: Delete memory (owner only)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Memory deleted successfully"
+  }
+
+3.6 Get Memory Media (Protected)
+- Method: GET
+- URL: /memories/{uuid}/media
+- Authentication: Required (Bearer Token)
+- Description: Get all media files for a memory
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Memory media retrieved successfully",
+    "data": [
+      {
+        "id": 1,
+        "uuid": "uuid",
+        "filename": "string",
+        "original_filename": "string",
+        "file_path": "string",
+        "file_size": 1024000,
+        "mime_type": "image/jpeg",
+        "media_type": "image",
+        "display_order": 1,
+        "url": "string",
+        "thumbnail_url": "string",
+        "created_at": "timestamp"
+      }
+    ]
+  }
+
+================================================================================
+4. MEDIA ENDPOINTS
+================================================================================
+
+4.1 Get All Media (Protected)
+- Method: GET
+- URL: /media
+- Authentication: Required (Bearer Token)
+- Description: Get paginated list of media files
+- Query Parameters:
+  - memory_id: integer (filter by memory)
+  - media_type: string (image, video)
+  - page: integer (default: 1)
+  - limit: integer (default: 20, max: 100)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Media files retrieved successfully",
+    "data": [
+      {
+        "id": 1,
+        "uuid": "uuid",
+        "filename": "string",
+        "original_filename": "string",
+        "file_path": "string",
+        "file_size": 1024000,
+        "mime_type": "image/jpeg",
+        "media_type": "image",
+        "display_order": 1,
+        "url": "string",
+        "thumbnail_url": "string",
+        "created_at": "timestamp"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 20,
+      "total": 50,
+      "total_pages": 3,
+      "has_next": true,
+      "has_prev": false
+    }
+  }
+
+4.2 Get Media by UUID (Protected)
+- Method: GET
+- URL: /media/{uuid}
+- Authentication: Required (Bearer Token)
+- Description: Get specific media file details
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Media file retrieved successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "filename": "string",
+      "original_filename": "string",
+      "file_path": "string",
+      "file_size": 1024000,
+      "mime_type": "image/jpeg",
+      "media_type": "image",
+      "display_order": 1,
+      "url": "string",
+      "thumbnail_url": "string",
+      "created_at": "timestamp"
+    }
+  }
+
+4.3 Upload Media (Protected)
+- Method: POST
+- URL: /media/upload
+- Authentication: Required (Bearer Token)
+- Description: Upload image or video file for a memory
+- Content-Type: multipart/form-data
+- Form Data:
+  - memory_id: integer (required)
+  - file: file (required, max 50MB)
+  - display_order: integer (optional, default: 0)
+- Supported Formats:
+  - Images: JPEG, PNG, GIF
+  - Videos: MP4, AVI, MOV
+- Response: 201 Created
+  {
+    "success": true,
+    "message": "Media uploaded successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "filename": "string",
+      "original_filename": "string",
+      "file_path": "string",
+      "file_size": 1024000,
+      "mime_type": "image/jpeg",
+      "media_type": "image",
+      "display_order": 1,
+      "url": "string",
+      "thumbnail_url": "string",
+      "created_at": "timestamp"
+    }
+  }
+
+4.4 Update Media (Protected)
+- Method: PUT
+- URL: /media/{uuid}
+- Authentication: Required (Bearer Token)
+- Description: Update media display order (owner only)
+- Request Body:
+  {
+    "display_order": integer (optional)
+  }
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Media updated successfully",
+    "data": {
+      "id": 1,
+      "uuid": "uuid",
+      "filename": "string",
+      "original_filename": "string",
+      "file_path": "string",
+      "file_size": 1024000,
+      "mime_type": "image/jpeg",
+      "media_type": "image",
+      "display_order": 2,
+      "url": "string",
+      "thumbnail_url": "string",
+      "created_at": "timestamp"
+    }
+  }
+
+4.5 Delete Media (Protected)
+- Method: DELETE
+- URL: /media/{uuid}
+- Authentication: Required (Bearer Token)
+- Description: Delete media file (owner only)
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Media deleted successfully"
+  }
+
+4.6 Serve Media File (Public)
+- Method: GET
+- URL: /media/{uuid}/file
+- Authentication: Not required
+- Description: Serve the actual media file for viewing/download
+- Response: 200 OK
+  - Content-Type: application/octet-stream
+  - File content
+
+================================================================================
+5. ADMIN ENDPOINTS
+================================================================================
+
+5.1 Get All Memories (Admin)
+- Method: GET
+- URL: /admin/memories
+- Authentication: Required (Bearer Token + Admin)
+- Description: Get all memories (admin can see private memories)
+- Query Parameters: Same as public memories endpoint
+- Response: Same as public memories endpoint
+
+5.2 Get All Media (Admin)
+- Method: GET
+- URL: /admin/media
+- Authentication: Required (Bearer Token + Admin)
+- Description: Get all media files (admin can see all media)
+- Query Parameters: Same as protected media endpoint
+- Response: Same as protected media endpoint
+
+================================================================================
+6. UTILITY ENDPOINTS
+================================================================================
+
+6.1 Health Check
+- Method: GET
+- URL: /health
+- Authentication: Not required
+- Description: Check API health status
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Service is healthy",
+    "data": {
+      "status": "healthy",
+      "database": "connected"
+    }
+  }
+
+6.2 Test Auth Header
+- Method: GET
+- URL: /auth/test-header
+- Authentication: Not required
+- Description: Test endpoint for debugging authorization headers
+- Response: 200 OK
+  {
+    "success": true,
+    "message": "Authorization header received",
+    "data": {
+      "auth_header": "string",
+      "has_bearer_prefix": boolean,
+      "header_length": integer
+    }
+  }
+
+================================================================================
+7. ERROR RESPONSES
+================================================================================
+
+All endpoints may return the following error responses:
+
+7.1 400 Bad Request
+{
+  "success": false,
+  "message": "Validation error",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Field validation failed",
+    "details": {
+      "field_name": "error message"
+    }
+  }
+}
+
+7.2 401 Unauthorized
+{
+  "success": false,
+  "message": "Authentication required",
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid or expired token"
+  }
+}
+
+7.3 403 Forbidden
+{
+  "success": false,
+  "message": "Access denied",
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "You don't have permission to access this resource"
+  }
+}
+
+7.4 404 Not Found
+{
+  "success": false,
+  "message": "Resource not found",
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "The requested resource was not found"
+  }
+}
+
+7.5 409 Conflict
+{
+  "success": false,
+  "message": "Resource conflict",
+  "error": {
+    "code": "CONFLICT",
+    "message": "Resource already exists"
+  }
+}
+
+7.6 413 Request Entity Too Large
+{
+  "success": false,
+  "message": "File too large",
+  "error": {
+    "code": "FILE_TOO_LARGE",
+    "message": "File size exceeds maximum limit of 50MB"
+  }
+}
+
+7.7 500 Internal Server Error
+{
+  "success": false,
+  "message": "Internal server error",
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "An unexpected error occurred"
+  }
+}
+
+================================================================================
+8. AUTHENTICATION
+================================================================================
+
+8.1 JWT Token Format
+- Header: Authorization: Bearer <jwt_token>
+- Token expires in 24 hours
+- Token contains user information (ID, UUID, email, username)
+
+8.2 Admin Access
+- Admin users have additional privileges
+- Admin emails: admin@mapmemories.com, administrator@mapmemories.com
+- Admin can access all resources regardless of ownership
+
+8.3 CORS Support
+- All origins allowed in development
+- Supports common HTTP methods
+- Includes authorization headers
+
+================================================================================
+9. PAGINATION
+================================================================================
+
+All list endpoints support pagination:
+- page: Page number (default: 1)
+- limit: Items per page (default: 20, max: 100)
+- Response includes pagination metadata
+
+================================================================================
+10. FILE UPLOAD
+================================================================================
+
+10.1 Supported Formats
+- Images: JPEG, PNG, GIF
+- Videos: MP4, AVI, MOV
+- Maximum file size: 50MB
+
+10.2 Upload Process
+- Files are stored in /app/uploads directory
+- Original filenames are preserved
+- Generated filenames are unique
+- Thumbnails are created for images
+
+================================================================================
+11. SEARCH AND FILTERING
+================================================================================
+
+11.1 Location Search
+- Search in name and description
+- Filter by country and city
+- Geospatial search within radius
+
+11.2 Memory Search
+- Search in title and content
+- Filter by tags (comma-separated)
+- Filter by public status
+- Sort by various fields
+
+11.3 Media Filtering
+- Filter by memory ID
+- Filter by media type (image/video)
+
+================================================================================
+12. RATE LIMITING
+================================================================================
+
+- 60 requests per minute per IP
+- Burst limit: 10 requests
+- Applies to all endpoints
+
+================================================================================
+13. DEVELOPMENT NOTES
+================================================================================
+
+13.1 Default Admin User
+- Username: admin
+- Password: admin
+- Email: admin@map-memories.com
+
+13.2 Database
+- PostgreSQL with PostGIS extension
+- UUID primary keys for public endpoints
+- Soft deletes for data integrity
+
+13.3 Environment Variables
+- DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+- JWT_SECRET, JWT_EXPIRY
+- UPLOAD_PATH, MAX_FILE_SIZE
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================ 

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"map-memories-api/database"
@@ -306,4 +307,19 @@ func (ac *AuthController) Logout(c *gin.Context) {
 		"Logout successful",
 		nil,
 	))
+}
+
+// TestAuthHeader tests the authorization header format
+func (ac *AuthController) TestAuthHeader(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Authorization header received",
+		"data": gin.H{
+			"auth_header": authHeader,
+			"has_bearer_prefix": strings.HasPrefix(authHeader, "Bearer "),
+			"header_length": len(authHeader),
+		},
+	})
 }

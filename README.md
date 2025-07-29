@@ -97,14 +97,24 @@ docker-compose logs -f api
 docker-compose down
 ```
 
-### 5. Kiểm tra kết nối
+### 5. Seed Data
+
+Ứng dụng tự động tạo user admin khi khởi động:
+
+- **Username**: `admin`
+- **Password**: `admin`
+- **Email**: `admin@map-memories.com`
+
+Xem chi tiết tại [docs/SEED_DATA.md](docs/SEED_DATA.md)
+
+### 6. Kiểm tra kết nối
 
 ```bash
 # Health check
-curl http://localhost:8080/health
+curl http://localhost:8222/health
 
 # Swagger documentation
-open http://localhost:8080/swagger/index.html
+open http://localhost:8222/swagger/index.html
 ```
 
 ## Cách sử dụng API
@@ -112,7 +122,7 @@ open http://localhost:8080/swagger/index.html
 ### 1. Đăng ký tài khoản
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
+curl -X POST http://localhost:8222/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -125,7 +135,7 @@ curl -X POST http://localhost:8080/api/v1/auth/register \
 ### 2. Đăng nhập
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8222/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -136,7 +146,7 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 ### 3. Tạo địa điểm
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/locations \
+curl -X POST http://localhost:8222/api/v1/locations \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -153,7 +163,7 @@ curl -X POST http://localhost:8080/api/v1/locations \
 ### 4. Tạo kỷ niệm
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/memories \
+curl -X POST http://localhost:8222/api/v1/memories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
@@ -168,7 +178,7 @@ curl -X POST http://localhost:8080/api/v1/memories \
 ### 5. Upload hình ảnh
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/media/upload \
+curl -X POST http://localhost:8222/api/v1/media/upload \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "memory_id=1" \
   -F "file=@/path/to/image.jpg"
@@ -177,7 +187,7 @@ curl -X POST http://localhost:8080/api/v1/media/upload \
 ### 6. Tìm kiếm địa điểm gần đó
 
 ```bash
-curl "http://localhost:8080/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=5&limit=10"
+curl "http://localhost:8222/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=5&limit=10"
 ```
 
 ## API Endpoints
@@ -262,16 +272,16 @@ docker-compose exec postgres psql -U mm_user -d map_memories
 
 ```bash
 # Health check
-curl http://localhost:8080/health
+curl http://localhost:8222/health
 
 # Test công khai endpoints
-curl http://localhost:8080/api/v1/locations
-curl http://localhost:8080/api/v1/memories?is_public=true
+curl http://localhost:8222/api/v1/locations
+curl http://localhost:8222/api/v1/memories?is_public=true
 ```
 
 ### Test với Postman
 
-Import Swagger spec từ `http://localhost:8080/swagger/doc.json` vào Postman để test interactive.
+Import Swagger spec từ `http://localhost:8222/swagger/doc.json` vào Postman để test interactive.
 
 ## Production Deployment
 
@@ -296,7 +306,7 @@ server {
     ssl_certificate_key /path/to/key.pem;
     
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:8222;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -320,7 +330,7 @@ docker-compose exec -T postgres psql -U mm_user map_memories < backup.sql
 1. **Port đã được sử dụng**
    ```bash
    docker-compose down
-   sudo lsof -i :8080
+   sudo lsof -i :8222
    sudo lsof -i :5432
    ```
 
@@ -369,7 +379,7 @@ Dự án được phát hành dưới [MIT License](LICENSE).
 
 - **GitHub Issues**: [Tạo issue mới](https://github.com/your-repo/issues)
 - **Email**: support@mapmemories.com
-- **Documentation**: [Swagger UI](http://localhost:8080/swagger/index.html)
+- **Documentation**: [Swagger UI](http://localhost:8222/swagger/index.html)
 
 ## Changelog
 

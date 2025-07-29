@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-http://localhost:8080/api/v1
+http://localhost:8222/api/v1
 ```
 
 ## Authentication Endpoints
@@ -194,23 +194,23 @@ Authorization: Bearer <your-jwt-token>
 ### Quick Start
 ```bash
 # Health check
-curl http://localhost:8080/health
+curl http://localhost:8222/health
 
 # Register user
-curl -X POST http://localhost:8080/api/v1/auth/register \
+curl -X POST http://localhost:8222/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"test","email":"test@example.com","password":"password123"}'
 
 # Login
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8222/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 
 # Get public memories
-curl http://localhost:8080/api/v1/memories?is_public=true&limit=5
+curl http://localhost:8222/api/v1/memories?is_public=true&limit=5
 
 # Search nearby locations
-curl "http://localhost:8080/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=5"
+curl "http://localhost:8222/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=5"
 ```
 
 ### With Authentication
@@ -218,19 +218,19 @@ curl "http://localhost:8080/api/v1/locations/nearby?latitude=21.0285&longitude=1
 export TOKEN="your-jwt-token-here"
 
 # Create location
-curl -X POST http://localhost:8080/api/v1/locations \
+curl -X POST http://localhost:8222/api/v1/locations \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"name":"Test Location","latitude":21.0285,"longitude":105.8542}'
 
 # Create memory
-curl -X POST http://localhost:8080/api/v1/memories \
+curl -X POST http://localhost:8222/api/v1/memories \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"location_id":1,"title":"Test Memory","content":"Test content","is_public":true}'
 
 # Upload media
-curl -X POST http://localhost:8080/api/v1/media/upload \
+curl -X POST http://localhost:8222/api/v1/media/upload \
   -H "Authorization: Bearer $TOKEN" \
   -F "memory_id=1" \
   -F "file=@image.jpg"
@@ -238,4 +238,4 @@ curl -X POST http://localhost:8080/api/v1/media/upload \
 
 ---
 
-Để biết thêm chi tiết về từng endpoint, tham khảo [API Documentation](./API_DOCUMENTATION.md) hoặc truy cập [Swagger UI](http://localhost:8080/swagger/index.html) khi service đang chạy.
+Để biết thêm chi tiết về từng endpoint, tham khảo [API Documentation](./API_DOCUMENTATION.md) hoặc truy cập [Swagger UI](http://localhost:8222/swagger/index.html) khi service đang chạy.

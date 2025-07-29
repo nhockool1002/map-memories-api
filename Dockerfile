@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git curl
@@ -8,13 +8,16 @@ RUN apk add --no-cache git curl
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY go.mod ./
 
 # Download dependencies
 RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Generate go.sum and tidy dependencies
+RUN go mod tidy
 
 # Generate Swagger docs
 RUN go install github.com/swaggo/swag/cmd/swag@latest

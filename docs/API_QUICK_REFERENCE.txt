@@ -1,0 +1,216 @@
+MAP MEMORIES API - QUICK REFERENCE
+===================================
+
+BASE URL: http://localhost:8222/api/v1
+AUTH: Bearer Token (JWT)
+
+================================================================================
+ESSENTIAL ENDPOINTS
+================================================================================
+
+AUTHENTICATION:
+POST /auth/register - Register new user
+POST /auth/login - Login user
+GET /auth/profile - Get user profile (Auth required)
+PUT /auth/profile - Update user profile (Auth required)
+POST /auth/logout - Logout user (Auth required)
+
+LOCATIONS:
+GET /locations - Get all locations (Public)
+GET /locations/{uuid} - Get location by UUID (Public)
+GET /locations/nearby - Search nearby locations (Public)
+POST /locations - Create location (Auth required)
+PUT /locations/{uuid} - Update location (Auth required)
+
+MEMORIES:
+GET /memories - Get public memories (Public)
+GET /memories/{uuid} - Get memory by UUID (Auth required)
+POST /memories - Create memory (Auth required)
+PUT /memories/{uuid} - Update memory (Auth required)
+DELETE /memories/{uuid} - Delete memory (Auth required)
+
+MEDIA:
+GET /media - Get media files (Auth required)
+POST /media/upload - Upload media (Auth required)
+GET /media/{uuid}/file - Serve media file (Public)
+
+================================================================================
+AUTHENTICATION FLOW
+================================================================================
+
+1. Register: POST /auth/register
+   {
+     "username": "user123",
+     "email": "user@example.com",
+     "password": "password123",
+     "full_name": "John Doe"
+   }
+
+2. Login: POST /auth/login
+   {
+     "email": "user@example.com",
+     "password": "password123"
+   }
+
+3. Use token in headers:
+   Authorization: Bearer <jwt_token>
+
+================================================================================
+COMMON REQUEST FORMATS
+================================================================================
+
+CREATE LOCATION:
+POST /locations
+{
+  "name": "Ho Chi Minh City",
+  "description": "Beautiful city in Vietnam",
+  "latitude": 10.8231,
+  "longitude": 106.6297,
+  "address": "Ho Chi Minh City, Vietnam",
+  "country": "Vietnam",
+  "city": "Ho Chi Minh City"
+}
+
+CREATE MEMORY:
+POST /memories
+{
+  "title": "Amazing trip to Saigon",
+  "content": "Had a wonderful time exploring the city...",
+  "location_id": 1,
+  "visit_date": "2024-01-15",
+  "is_public": true,
+  "tags": ["travel", "vietnam", "saigon"]
+}
+
+UPLOAD MEDIA:
+POST /media/upload
+Content-Type: multipart/form-data
+- memory_id: 1
+- file: [file]
+- display_order: 1
+
+================================================================================
+COMMON RESPONSE FORMAT
+================================================================================
+
+SUCCESS:
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... }
+}
+
+ERROR:
+{
+  "success": false,
+  "message": "Error message",
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Detailed error message"
+  }
+}
+
+PAGINATED RESPONSE:
+{
+  "success": true,
+  "message": "Data retrieved successfully",
+  "data": [ ... ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 100,
+    "total_pages": 5,
+    "has_next": true,
+    "has_prev": false
+  }
+}
+
+================================================================================
+QUERY PARAMETERS
+================================================================================
+
+PAGINATION:
+- page: integer (default: 1)
+- limit: integer (default: 20, max: 100)
+
+SEARCH:
+- search: string (search in text fields)
+
+FILTERS:
+- is_public: boolean (memories)
+- media_type: string (image, video)
+- country: string (locations)
+- city: string (locations)
+- tags: string (comma-separated)
+
+SORTING:
+- sort_by: string (created_at, visit_date, title)
+- sort_order: string (asc, desc)
+
+GEOGRAPHIC:
+- latitude: number (required for nearby search)
+- longitude: number (required for nearby search)
+- radius: number (km, default: 10, max: 100)
+
+================================================================================
+ERROR CODES
+================================================================================
+
+400 - Bad Request (Validation errors)
+401 - Unauthorized (Invalid/missing token)
+403 - Forbidden (Insufficient permissions)
+404 - Not Found (Resource not found)
+409 - Conflict (Resource already exists)
+413 - Request Entity Too Large (File too big)
+500 - Internal Server Error
+
+================================================================================
+FILE UPLOAD
+================================================================================
+
+SUPPORTED FORMATS:
+- Images: JPEG, PNG, GIF
+- Videos: MP4, AVI, MOV
+- Max size: 50MB
+
+UPLOAD PROCESS:
+1. Use multipart/form-data
+2. Include memory_id
+3. Optional display_order
+4. File will be processed and stored
+
+================================================================================
+DEVELOPMENT TIPS
+================================================================================
+
+1. Always include Authorization header for protected endpoints
+2. Handle pagination for list endpoints
+3. Use proper Content-Type headers
+4. Handle file uploads with multipart/form-data
+5. Implement error handling for all responses
+6. Use query parameters for filtering and searching
+7. Store JWT token securely (localStorage/sessionStorage)
+8. Implement token refresh logic
+9. Handle CORS properly
+10. Test with Swagger UI at /swagger/index.html
+
+================================================================================
+DEFAULT ADMIN USER
+================================================================================
+
+Username: admin
+Password: admin
+Email: admin@map-memories.com
+
+Use this for testing admin features.
+
+================================================================================
+SWAGGER DOCUMENTATION
+================================================================================
+
+Interactive API documentation available at:
+http://localhost:8222/swagger/index.html
+
+================================================================================
+END OF QUICK REFERENCE
+================================================================================ 

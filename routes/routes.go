@@ -55,6 +55,7 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				auth.POST("/register", authController.Register)
 				auth.POST("/login", authController.Login)
+				auth.GET("/test-header", authController.TestAuthHeader) // Test endpoint
 			}
 
 			// Public locations (read-only)
@@ -98,7 +99,7 @@ func SetupRoutes(r *gin.Engine) {
 				memories.POST("", memoryController.CreateMemory)
 				memories.PUT("/:uuid", memoryController.UpdateMemory)
 				memories.DELETE("/:uuid", memoryController.DeleteMemory)
-				memories.GET("/:memory_uuid/media", mediaController.GetMemoryMedia)
+				memories.GET("/:uuid/media", mediaController.GetMemoryMedia)
 			}
 
 			// Location management
