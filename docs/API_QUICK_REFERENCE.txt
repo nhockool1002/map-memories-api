@@ -11,15 +11,15 @@ ESSENTIAL ENDPOINTS
 AUTHENTICATION:
 POST /auth/register - Register new user
 POST /auth/login - Login user
-GET /auth/profile - Get user profile (Auth required)
+GET /auth/profile - Get user profile with currency & items (Auth required)
 PUT /auth/profile - Update user profile (Auth required)
 POST /auth/logout - Logout user (Auth required)
 
 LOCATIONS:
-GET /locations - Get all locations (Public)
+GET /locations - Get all locations with markers (Public)
 GET /locations/{uuid} - Get location by UUID (Public)
 GET /locations/nearby - Search nearby locations (Public)
-POST /locations - Create location (Auth required)
+POST /locations - Create location with custom marker (Auth required)
 PUT /locations/{uuid} - Update location (Auth required)
 
 MEMORIES:
@@ -33,6 +33,26 @@ MEDIA:
 GET /media - Get media files (Auth required)
 POST /media/upload - Upload media (Auth required)
 GET /media/{uuid}/file - Serve media file (Public)
+
+SHOP:
+GET /shop/items - Get shop items (Public)
+GET /shop/items/{uuid} - Get shop item details (Public)
+POST /shop/purchase - Purchase item (Auth required)
+GET /shop/my-items - Get user's owned items (Auth required)
+
+CURRENCY:
+GET /currency/balance - Get user balance in Xu (Auth required)
+GET /currency/history - Get user transaction history (Auth required)
+
+ADMIN - SHOP:
+POST /admin/shop/items - Create shop item (Admin required)
+PUT /admin/shop/items/{uuid} - Update shop item (Admin required)
+DELETE /admin/shop/items/{uuid} - Delete shop item (Admin required)
+
+ADMIN - CURRENCY:
+POST /admin/currency/add - Add currency to user (Admin required)
+POST /admin/currency/subtract - Subtract currency from user (Admin required)
+GET /admin/currency/history - Get user transaction history (Admin required)
 
 ================================================================================
 AUTHENTICATION FLOW
@@ -68,7 +88,8 @@ POST /locations
   "longitude": 106.6297,
   "address": "Ho Chi Minh City, Vietnam",
   "country": "Vietnam",
-  "city": "Ho Chi Minh City"
+  "city": "Ho Chi Minh City",
+  "marker_item_id": 1 // Optional: Custom marker from owned items
 }
 
 CREATE MEMORY:
@@ -88,6 +109,32 @@ Content-Type: multipart/form-data
 - memory_id: 1
 - file: [file]
 - display_order: 1
+
+PURCHASE ITEM:
+POST /shop/purchase
+{
+  "shop_item_id": 1,
+  "quantity": 1
+}
+
+CREATE SHOP ITEM (Admin):
+POST /admin/shop/items
+{
+  "name": "Golden Star Marker",
+  "description": "A beautiful golden star marker",
+  "image_url": "/media/markers/golden-star.png",
+  "price": 100,
+  "stock": 50,
+  "item_type": "marker"
+}
+
+ADD CURRENCY (Admin):
+POST /admin/currency/add
+{
+  "user_id": 1,
+  "amount": 1000,
+  "description": "Monthly bonus"
+}
 
 ================================================================================
 COMMON RESPONSE FORMAT
@@ -142,6 +189,8 @@ FILTERS:
 - country: string (locations)
 - city: string (locations)
 - tags: string (comma-separated)
+- item_type: string (shop items: marker, etc.)
+- active_only: boolean (shop items, default: true)
 
 SORTING:
 - sort_by: string (created_at, visit_date, title)

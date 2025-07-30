@@ -61,6 +61,9 @@ func AutoMigrate() {
 		&models.Media{},
 		&models.UserSession{},
 		&models.MemoryLike{},
+		&models.ShopItem{},
+		&models.UserItem{},
+		&models.TransactionLog{},
 	)
 	
 	if err != nil {

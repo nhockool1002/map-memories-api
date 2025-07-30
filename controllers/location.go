@@ -31,7 +31,7 @@ type LocationController struct{}
 // @Failure 500 {object} models.APIResponse
 // @Router /locations [post]
 func (lc *LocationController) CreateLocation(c *gin.Context) {
-	_, exists := middleware.GetCurrentUserID(c)
+	userID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, models.ErrorResponseWithCode(
 			"Authentication required",
@@ -56,15 +56,39 @@ func (lc *LocationController) CreateLocation(c *gin.Context) {
 		return
 	}
 
+	// If custom marker is specified, validate user owns it
+	if req.MarkerItemID != nil {
+		var userItem models.UserItem
+		if err := database.DB.Where("user_id = ? AND shop_item_id = ? AND quantity > 0", 
+			userID, *req.MarkerItemID).First(&userItem).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
+					"You don't own this marker item",
+					"MARKER_NOT_OWNED",
+					nil,
+				))
+			} else {
+				c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+					"Failed to verify marker ownership",
+					"INTERNAL_ERROR",
+					nil,
+				))
+			}
+			return
+		}
+	}
+
 	// Create location
 	location := models.Location{
-		Name:        req.Name,
-		Description: req.Description,
-		Latitude:    req.Latitude,
-		Longitude:   req.Longitude,
-		Address:     req.Address,
-		Country:     req.Country,
-		City:        req.City,
+		Name:         req.Name,
+		Description:  req.Description,
+		Latitude:     req.Latitude,
+		Longitude:    req.Longitude,
+		Address:      req.Address,
+		Country:      req.Country,
+		City:         req.City,
+		UserID:       userID,
+		MarkerItemID: req.MarkerItemID,
 	}
 
 	if err := database.DB.Create(&location).Error; err != nil {
@@ -74,6 +98,11 @@ func (lc *LocationController) CreateLocation(c *gin.Context) {
 			err.Error(),
 		))
 		return
+	}
+
+	// Load marker item for response
+	if location.MarkerItemID != nil {
+		database.DB.Preload("MarkerItem").First(&location, location.ID)
 	}
 
 	c.JSON(http.StatusCreated, models.SuccessResponse(
@@ -127,7 +156,7 @@ func (lc *LocationController) GetLocations(c *gin.Context) {
 
 	// Get locations
 	var locations []models.Location
-	if err := query.Limit(limit).Offset(offset).Find(&locations).Error; err != nil {
+	if err := query.Preload("MarkerItem").Limit(limit).Offset(offset).Find(&locations).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to fetch locations",
 			"INTERNAL_ERROR",
