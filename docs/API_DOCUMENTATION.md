@@ -584,9 +584,251 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 
 ---
 
-# 5. Admin API
+# 5. Shop API
 
-## 5.1 Xóa địa điểm (Admin only)
+## 5.1 Danh sách shop items
+
+**Endpoint:** `GET /shop/items`
+**Auth:** Public
+
+### Query Parameters
+- `page` (int): Số trang (default: 1)
+- `limit` (int): Số items/trang (default: 20, max: 100)
+- `item_type` (string): Filter theo loại item (marker, etc.)
+- `active_only` (bool): Chỉ hiển thị items đang hoạt động (default: true)
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Shop items retrieved successfully",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "uuid": "550e8400-e29b-41d4-a716-446655440000",
+        "name": "Golden Star Marker",
+        "description": "A beautiful golden star marker for your locations",
+        "image_url": "/media/markers/golden-star.png",
+        "price": 100,
+        "stock": 50,
+        "item_type": "marker",
+        "is_active": true,
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 15,
+      "total_pages": 1
+    }
+  }
+}
+```
+
+## 5.2 Chi tiết shop item
+
+**Endpoint:** `GET /shop/items/{uuid}`
+**Auth:** Public
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Shop item retrieved successfully",
+  "data": {
+    "id": 1,
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Golden Star Marker",
+    "description": "A beautiful golden star marker for your locations",
+    "image_url": "/media/markers/golden-star.png",
+    "price": 100,
+    "stock": 50,
+    "item_type": "marker",
+    "is_active": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+## 5.3 Mua item
+
+**Endpoint:** `POST /shop/purchase`
+**Auth:** Required
+
+### Request Body
+```json
+{
+  "shop_item_id": 1,
+  "quantity": 1
+}
+```
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Item purchased successfully",
+  "data": {
+    "item_name": "Golden Star Marker",
+    "quantity": 1,
+    "total_cost": 100,
+    "new_balance": 900,
+    "remaining_stock": 49
+  }
+}
+```
+
+### Error - Insufficient Balance (400)
+```json
+{
+  "success": false,
+  "message": "Insufficient balance",
+  "error": {
+    "code": "INSUFFICIENT_BALANCE",
+    "details": {
+      "current_balance": 50,
+      "required_amount": 100
+    }
+  }
+}
+```
+
+### Error - Insufficient Stock (400)
+```json
+{
+  "success": false,
+  "message": "Insufficient stock",
+  "error": {
+    "code": "INSUFFICIENT_STOCK",
+    "details": {
+      "available_stock": 0,
+      "requested_quantity": 1
+    }
+  }
+}
+```
+
+## 5.4 Danh sách items của user
+
+**Endpoint:** `GET /shop/my-items`
+**Auth:** Required
+
+### Query Parameters
+- `page` (int): Số trang (default: 1)
+- `limit` (int): Số items/trang (default: 20, max: 100)
+- `item_type` (string): Filter theo loại item
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "User items retrieved successfully",
+  "data": {
+    "items": [
+      {
+        "id": 1,
+        "uuid": "550e8400-e29b-41d4-a716-446655440000",
+        "quantity": 2,
+        "shop_item": {
+          "id": 1,
+          "uuid": "550e8400-e29b-41d4-a716-446655440000",
+          "name": "Golden Star Marker",
+          "description": "A beautiful golden star marker",
+          "image_url": "/media/markers/golden-star.png",
+          "price": 100,
+          "stock": 48,
+          "item_type": "marker",
+          "is_active": true,
+          "created_at": "2024-01-15T10:30:00Z",
+          "updated_at": "2024-01-15T10:30:00Z"
+        },
+        "created_at": "2024-01-15T11:00:00Z",
+        "updated_at": "2024-01-15T11:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "total_pages": 1
+    }
+  }
+}
+```
+
+---
+
+# 6. Currency API
+
+## 6.1 Xem số dư
+
+**Endpoint:** `GET /currency/balance`
+**Auth:** Required
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Balance retrieved successfully",
+  "data": {
+    "user_id": 1,
+    "balance": 1500
+  }
+}
+```
+
+## 6.2 Lịch sử giao dịch
+
+**Endpoint:** `GET /currency/history`
+**Auth:** Required
+
+### Query Parameters
+- `page` (int): Số trang (default: 1)
+- `limit` (int): Số items/trang (default: 20, max: 100)
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Transaction history retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": 1,
+        "uuid": "550e8400-e29b-41d4-a716-446655440000",
+        "user_id": 1,
+        "admin_id": null,
+        "type": "purchase",
+        "amount": -100,
+        "description": "Purchased 1x Golden Star Marker",
+        "created_at": "2024-01-15T11:00:00Z",
+        "user": {
+          "id": 1,
+          "username": "john_doe",
+          "email": "john@example.com"
+        },
+        "admin": null
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 10,
+      "total_pages": 1
+    }
+  }
+}
+```
+
+---
+
+# 7. Admin API
+
+## 7.1 Xóa địa điểm (Admin only)
 
 **Endpoint:** `DELETE /admin/locations/{uuid}`
 **Auth:** Required (Admin only)
@@ -609,6 +851,211 @@ Các endpoint trả về danh sách hỗ trợ pagination:
     "code": "LOCATION_HAS_MEMORIES",
     "details": {
       "memory_count": 5
+    }
+  }
+}
+```
+
+## 7.2 Tạo shop item (Admin only)
+
+**Endpoint:** `POST /admin/shop/items`
+**Auth:** Required (Admin only)
+
+### Request Body
+```json
+{
+  "name": "Golden Star Marker",
+  "description": "A beautiful golden star marker for your locations",
+  "image_url": "/media/markers/golden-star.png",
+  "price": 100,
+  "stock": 50,
+  "item_type": "marker"
+}
+```
+
+### Response (201)
+```json
+{
+  "success": true,
+  "message": "Shop item created successfully",
+  "data": {
+    "id": 1,
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Golden Star Marker",
+    "description": "A beautiful golden star marker for your locations",
+    "image_url": "/media/markers/golden-star.png",
+    "price": 100,
+    "stock": 50,
+    "item_type": "marker",
+    "is_active": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+## 7.3 Cập nhật shop item (Admin only)
+
+**Endpoint:** `PUT /admin/shop/items/{uuid}`
+**Auth:** Required (Admin only)
+
+### Request Body
+```json
+{
+  "name": "Golden Star Marker - Updated",
+  "price": 120,
+  "stock": 75,
+  "is_active": true
+}
+```
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Shop item updated successfully",
+  "data": {
+    "id": 1,
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Golden Star Marker - Updated",
+    "description": "A beautiful golden star marker for your locations",
+    "image_url": "/media/markers/golden-star.png",
+    "price": 120,
+    "stock": 75,
+    "item_type": "marker",
+    "is_active": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T12:00:00Z"
+  }
+}
+```
+
+## 7.4 Xóa shop item (Admin only)
+
+**Endpoint:** `DELETE /admin/shop/items/{uuid}`
+**Auth:** Required (Admin only)
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Shop item deleted successfully",
+  "data": null
+}
+```
+
+## 7.5 Cộng tiền cho user (Admin only)
+
+**Endpoint:** `POST /admin/currency/add`
+**Auth:** Required (Admin only)
+
+### Request Body
+```json
+{
+  "user_id": 1,
+  "amount": 1000,
+  "description": "Monthly bonus"
+}
+```
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Currency added successfully",
+  "data": {
+    "user_id": 1,
+    "new_balance": 2000,
+    "amount_added": 1000
+  }
+}
+```
+
+## 7.6 Trừ tiền từ user (Admin only)
+
+**Endpoint:** `POST /admin/currency/subtract`
+**Auth:** Required (Admin only)
+
+### Request Body
+```json
+{
+  "user_id": 1,
+  "amount": 500,
+  "description": "Penalty for violation"
+}
+```
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Currency subtracted successfully",
+  "data": {
+    "user_id": 1,
+    "new_balance": 1500,
+    "amount_subtracted": 500
+  }
+}
+```
+
+### Error - Insufficient Balance (400)
+```json
+{
+  "success": false,
+  "message": "Insufficient balance",
+  "error": {
+    "code": "INSUFFICIENT_BALANCE",
+    "details": {
+      "current_balance": 100,
+      "required_amount": 500
+    }
+  }
+}
+```
+
+## 7.7 Lịch sử giao dịch của user (Admin only)
+
+**Endpoint:** `GET /admin/currency/history`
+**Auth:** Required (Admin only)
+
+### Query Parameters
+- `user_id` (int, required): ID của user cần xem lịch sử
+- `page` (int): Số trang (default: 1)
+- `limit` (int): Số items/trang (default: 20, max: 100)
+
+### Response (200)
+```json
+{
+  "success": true,
+  "message": "Transaction history retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": 1,
+        "uuid": "550e8400-e29b-41d4-a716-446655440000",
+        "user_id": 1,
+        "admin_id": 2,
+        "type": "admin_add",
+        "amount": 1000,
+        "description": "Monthly bonus",
+        "created_at": "2024-01-15T09:00:00Z",
+        "user": {
+          "id": 1,
+          "username": "john_doe",
+          "email": "john@example.com"
+        },
+        "admin": {
+          "id": 2,
+          "username": "admin",
+          "email": "admin@example.com"
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 25,
+      "total_pages": 2
     }
   }
 }

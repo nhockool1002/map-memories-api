@@ -15,14 +15,17 @@ type User struct {
 	PasswordHash string         `json:"-" gorm:"not null"`
 	FullName     string         `json:"full_name" gorm:"size:255"`
 	AvatarURL    string         `json:"avatar_url" gorm:"type:text"`
+	IsAdmin      bool           `json:"is_admin" gorm:"default:false;not null"`
+	Currency     int64          `json:"currency" gorm:"default:0;not null"` // Xu currency
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Relationships
-	Memories []Memory `json:"memories,omitempty" gorm:"foreignKey:UserID"`
-	Sessions []UserSession `json:"-" gorm:"foreignKey:UserID"`
-	Likes    []MemoryLike `json:"-" gorm:"foreignKey:UserID"`
+	Memories  []Memory    `json:"memories,omitempty" gorm:"foreignKey:UserID"`
+	Sessions  []UserSession `json:"-" gorm:"foreignKey:UserID"`
+	Likes     []MemoryLike `json:"-" gorm:"foreignKey:UserID"`
+	UserItems []UserItem   `json:"user_items,omitempty" gorm:"foreignKey:UserID"`
 }
 
 func (User) TableName() string {
@@ -45,18 +48,26 @@ type UserLoginRequest struct {
 
 // UserResponse represents the user response (without sensitive data)
 type UserResponse struct {
-	ID        uint      `json:"id"`
-	UUID      uuid.UUID `json:"uuid"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	FullName  string    `json:"full_name"`
-	AvatarURL string    `json:"avatar_url"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        uint         `json:"id"`
+	UUID      uuid.UUID    `json:"uuid"`
+	Username  string       `json:"username"`
+	Email     string       `json:"email"`
+	FullName  string       `json:"full_name"`
+	AvatarURL string       `json:"avatar_url"`
+	IsAdmin   bool         `json:"is_admin"`
+	Currency  int64        `json:"currency"`
+	UserItems []UserItemResponse `json:"user_items,omitempty"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
 }
 
 // ToResponse converts User to UserResponse
 func (u *User) ToResponse() UserResponse {
+	var userItems []UserItemResponse
+	for _, item := range u.UserItems {
+		userItems = append(userItems, item.ToResponse())
+	}
+	
 	return UserResponse{
 		ID:        u.ID,
 		UUID:      u.UUID,
@@ -64,6 +75,9 @@ func (u *User) ToResponse() UserResponse {
 		Email:     u.Email,
 		FullName:  u.FullName,
 		AvatarURL: u.AvatarURL,
+		IsAdmin:   u.IsAdmin,
+		Currency:  u.Currency,
+		UserItems: userItems,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}

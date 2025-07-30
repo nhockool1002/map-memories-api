@@ -194,7 +194,7 @@ func (ac *AuthController) GetProfile(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := database.DB.Preload("UserItems.ShopItem").First(&user, userID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"User not found",

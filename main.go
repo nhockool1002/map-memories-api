@@ -73,6 +73,12 @@ import (
 // @tag.name Media
 // @tag.description Upload và quản lý hình ảnh, video
 
+// @tag.name Shop
+// @tag.description Quản lý cửa hàng và mua sắm items
+
+// @tag.name Currency
+// @tag.description Quản lý tiền tệ và giao dịch
+
 func main() {
 	// Load configuration
 	config.LoadConfig()

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"map-memories-api/database"
 	"map-memories-api/models"
 	"map-memories-api/utils"
 
@@ -170,9 +171,7 @@ func RequireOwnership() gin.HandlerFunc {
 // AdminMiddleware ensures only admin users can access the endpoint
 func AdminMiddleware() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
-		// For now, we'll implement a simple admin check
-		// In a real application, you'd check user roles from the database
-		userEmail, exists := GetCurrentUserEmail(c)
+		userID, exists := GetCurrentUserID(c)
 		if !exists {
 			c.JSON(http.StatusUnauthorized, models.ErrorResponseWithCode(
 				"Authentication required",
@@ -183,17 +182,19 @@ func AdminMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Simple admin check - in production, use proper role-based access control
-		adminEmails := []string{"admin@mapmemories.com", "administrator@mapmemories.com"}
-		isAdmin := false
-		for _, adminEmail := range adminEmails {
-			if strings.EqualFold(userEmail, adminEmail) {
-				isAdmin = true
-				break
-			}
+		// Check if user is admin from database
+		user, err := GetUserByID(userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+				"Failed to verify admin status",
+				"INTERNAL_ERROR",
+				nil,
+			))
+			c.Abort()
+			return
 		}
 
-		if !isAdmin {
+		if !user.IsAdmin {
 			c.JSON(http.StatusForbidden, models.ErrorResponseWithCode(
 				"Admin access required",
 				"FORBIDDEN",
@@ -205,4 +206,13 @@ func AdminMiddleware() gin.HandlerFunc {
 
 		c.Next()
 	})
+}
+
+// GetUserByID retrieves user by ID from database
+func GetUserByID(userID uint) (*models.User, error) {
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

@@ -11,7 +11,7 @@ http://localhost:8222/api/v1
 |--------|----------|-------------|---------------|
 | `POST` | `/auth/register` | Đăng ký tài khoản mới | ❌ |
 | `POST` | `/auth/login` | Đăng nhập | ❌ |
-| `GET` | `/auth/profile` | Xem profile người dùng | ✅ |
+| `GET` | `/auth/profile` | Xem profile người dùng (bao gồm currency và items) | ✅ |
 | `PUT` | `/auth/profile` | Cập nhật profile | ✅ |
 | `POST` | `/auth/logout` | Đăng xuất | ✅ |
 
@@ -19,10 +19,10 @@ http://localhost:8222/api/v1
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `GET` | `/locations` | Danh sách địa điểm (có pagination) | ❌ |
-| `POST` | `/locations` | Tạo địa điểm mới | ✅ |
-| `GET` | `/locations/{uuid}` | Chi tiết địa điểm | ❌ |
-| `PUT` | `/locations/{uuid}` | Cập nhật địa điểm | ✅ |
+| `GET` | `/locations` | Danh sách địa điểm (có pagination, hỗ trợ custom markers) | ❌ |
+| `POST` | `/locations` | Tạo địa điểm mới (có thể chọn custom marker) | ✅ |
+| `GET` | `/locations/{uuid}` | Chi tiết địa điểm (bao gồm marker info) | ❌ |
+| `PUT` | `/locations/{uuid}` | Cập nhật địa điểm (có thể thay đổi marker) | ✅ |
 | `GET` | `/locations/nearby` | Tìm địa điểm gần tọa độ | ❌ |
 | `GET` | `/locations/{uuid}/memories` | Kỷ niệm tại địa điểm | ❌ |
 
@@ -48,6 +48,22 @@ http://localhost:8222/api/v1
 | `PUT` | `/media/{uuid}` | Cập nhật media (owner only) | ✅ |
 | `DELETE` | `/media/{uuid}` | Xóa media (owner only) | ✅ |
 
+## Shop Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/shop/items` | Danh sách items trong shop | ❌ |
+| `GET` | `/shop/items/{uuid}` | Chi tiết shop item | ❌ |
+| `POST` | `/shop/purchase` | Mua item từ shop | ✅ |
+| `GET` | `/shop/my-items` | Danh sách items của user | ✅ |
+
+## Currency Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/currency/balance` | Xem số dư Xu của user | ✅ |
+| `GET` | `/currency/history` | Lịch sử giao dịch của user | ✅ |
+
 ## Admin Endpoints
 
 | Method | Endpoint | Description | Auth Required |
@@ -55,6 +71,12 @@ http://localhost:8222/api/v1
 | `DELETE` | `/admin/locations/{uuid}` | Xóa địa điểm | ✅ Admin |
 | `GET` | `/admin/memories` | Tất cả kỷ niệm | ✅ Admin |
 | `GET` | `/admin/media` | Tất cả media | ✅ Admin |
+| `POST` | `/admin/shop/items` | Tạo shop item mới | ✅ Admin |
+| `PUT` | `/admin/shop/items/{uuid}` | Cập nhật shop item | ✅ Admin |
+| `DELETE` | `/admin/shop/items/{uuid}` | Xóa shop item | ✅ Admin |
+| `POST` | `/admin/currency/add` | Cộng tiền cho user | ✅ Admin |
+| `POST` | `/admin/currency/subtract` | Trừ tiền từ user | ✅ Admin |
+| `GET` | `/admin/currency/history` | Lịch sử giao dịch của user cụ thể | ✅ Admin |
 
 ## Health Check
 
@@ -94,6 +116,13 @@ http://localhost:8222/api/v1
 ### Media Filters
 - `memory_id` (int): Lọc theo kỷ niệm
 - `media_type` (string): Lọc theo loại (image, video)
+
+### Shop Filters
+- `item_type` (string): Lọc theo loại item (marker, etc.)
+- `active_only` (bool): Chỉ hiển thị items đang hoạt động (default: true)
+
+### Currency Parameters
+- `user_id` (int): ID của user (cho admin APIs)
 
 ### Geospatial Search (/locations/nearby)
 - `latitude` (float, required): Vĩ độ (-90 to 90)
