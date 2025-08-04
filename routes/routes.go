@@ -116,7 +116,7 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				locations.POST("", locationController.CreateLocation)
 				locations.PUT("/:uuid", locationController.UpdateLocation)
-				// Delete is admin only - will be added below
+				locations.DELETE("/:uuid", locationController.DeleteLocation)
 			}
 
 			// Media management
@@ -149,12 +149,6 @@ func SetupRoutes(r *gin.Engine) {
 		admin.Use(middleware.AuthMiddleware())
 		admin.Use(middleware.AdminMiddleware())
 		{
-			// Admin location management
-			locations := admin.Group("locations")
-			{
-				locations.DELETE("/:uuid", locationController.DeleteLocation)
-			}
-
 			// Admin can access all memories
 			memories := admin.Group("memories")
 			{
@@ -184,6 +178,11 @@ func SetupRoutes(r *gin.Engine) {
 			}
 		}
 	}
+
+	// Static file serving for media
+	mediaGroup := r.Group("/media")
+	mediaGroup.Use(middleware.CORSMiddleware())
+	mediaGroup.Static("", "/Users/mac/Project/Self/map-memories-api/media")
 
 	// Swagger documentation
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

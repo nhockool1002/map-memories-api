@@ -59,7 +59,7 @@ func (lc *LocationController) CreateLocation(c *gin.Context) {
 	// If custom marker is specified, validate user owns it
 	if req.MarkerItemID != nil {
 		var userItem models.UserItem
-		if err := database.DB.Where("user_id = ? AND shop_item_id = ? AND quantity > 0", 
+		if err := database.DB.Where("user_id = ? AND shop_item_id = ? AND quantity > 0",
 			userID, *req.MarkerItemID).First(&userItem).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
@@ -127,14 +127,14 @@ func (lc *LocationController) CreateLocation(c *gin.Context) {
 func (lc *LocationController) GetLocations(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	
+
 	if limit > 100 {
 		limit = 100
 	}
-	
+
 	offset := (page - 1) * limit
 
-	// Build query
+	// Build query (excludes soft deleted records)
 	query := database.DB.Model(&models.Location{})
 
 	// Apply filters
@@ -169,12 +169,12 @@ func (lc *LocationController) GetLocations(c *gin.Context) {
 	locationResponses := make([]models.LocationResponse, len(locations))
 	for i, location := range locations {
 		response := location.ToResponse()
-		
-		// Count memories for this location
+
+		// Count memories for this location (only non-null location_id)
 		var memoryCount int64
-		database.DB.Model(&models.Memory{}).Where("location_id = ?", location.ID).Count(&memoryCount)
+		database.DB.Model(&models.Memory{}).Where("location_id = ? AND location_id IS NOT NULL", location.ID).Count(&memoryCount)
 		response.MemoryCount = memoryCount
-		
+
 		locationResponses[i] = response
 	}
 
@@ -200,7 +200,7 @@ func (lc *LocationController) GetLocations(c *gin.Context) {
 // @Router /locations/{uuid} [get]
 func (lc *LocationController) GetLocation(c *gin.Context) {
 	uuidStr := c.Param("uuid")
-	
+
 	// Parse UUID
 	locationUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
@@ -231,10 +231,10 @@ func (lc *LocationController) GetLocation(c *gin.Context) {
 	}
 
 	response := location.ToResponse()
-	
-	// Count memories for this location
+
+	// Count memories for this location (only non-null location_id)
 	var memoryCount int64
-	database.DB.Model(&models.Memory{}).Where("location_id = ?", location.ID).Count(&memoryCount)
+	database.DB.Model(&models.Memory{}).Where("location_id = ? AND location_id IS NOT NULL", location.ID).Count(&memoryCount)
 	response.MemoryCount = memoryCount
 
 	c.JSON(http.StatusOK, models.SuccessResponse(
@@ -285,7 +285,7 @@ func (lc *LocationController) UpdateLocation(c *gin.Context) {
 		return
 	}
 
-	// Find location
+	// Find location (excludes soft deleted records)
 	var location models.Location
 	if err := database.DB.Where("uuid = ?", locationUUID).First(&location).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -360,15 +360,15 @@ func (lc *LocationController) UpdateLocation(c *gin.Context) {
 }
 
 // DeleteLocation godoc
-// @Summary Delete location
-// @Description Delete a location (admin only)
+// @Summary Delete location (soft delete)
+// @Description Soft delete a location by setting deleted_at timestamp
 // @Tags Locations
 // @Produce json
 // @Security BearerAuth
 // @Param uuid path string true "Location UUID"
 // @Success 200 {object} models.APIResponse
+// @Failure 400 {object} models.APIResponse
 // @Failure 401 {object} models.APIResponse
-// @Failure 403 {object} models.APIResponse
 // @Failure 404 {object} models.APIResponse
 // @Failure 409 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -385,9 +385,9 @@ func (lc *LocationController) DeleteLocation(c *gin.Context) {
 		return
 	}
 
-	// Find location
+	// Find location (including soft deleted ones for checking)
 	var location models.Location
-	if err := database.DB.Where("uuid = ?", locationUUID).First(&location).Error; err != nil {
+	if err := database.DB.Unscoped().Where("uuid = ?", locationUUID).First(&location).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"Location not found",
@@ -404,22 +404,53 @@ func (lc *LocationController) DeleteLocation(c *gin.Context) {
 		return
 	}
 
-	// Check if location has associated memories
-	var memoryCount int64
-	database.DB.Model(&models.Memory{}).Where("location_id = ?", location.ID).Count(&memoryCount)
-	if memoryCount > 0 {
-		c.JSON(http.StatusConflict, models.ErrorResponseWithCode(
-			"Cannot delete location with associated memories",
-			"LOCATION_HAS_MEMORIES",
-			map[string]interface{}{"memory_count": memoryCount},
+	// Check if location is already soft deleted
+	if !location.DeletedAt.Time.IsZero() {
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
+			"Location is already deleted",
+			"LOCATION_ALREADY_DELETED",
+			nil,
 		))
 		return
 	}
 
-	// Delete location
-	if err := database.DB.Delete(&location).Error; err != nil {
+	// Use transaction to ensure data consistency
+	tx := database.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Check if location has associated memories
+	var memoryCount int64
+	tx.Model(&models.Memory{}).Where("location_id = ? AND location_id IS NOT NULL", location.ID).Count(&memoryCount)
+	if memoryCount > 0 {
+		// Prevent deletion if location has memories
+		tx.Rollback()
+		c.JSON(http.StatusConflict, models.ErrorResponseWithCode(
+			"Cannot delete location that has associated memories",
+			"LOCATION_HAS_MEMORIES",
+			nil,
+		))
+		return
+	}
+
+	// Soft delete location using GORM's soft delete
+	if err := tx.Delete(&location).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to delete location",
+			"INTERNAL_ERROR",
+			err.Error(),
+		))
+		return
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+			"Failed to commit transaction",
 			"INTERNAL_ERROR",
 			err.Error(),
 		))
@@ -508,7 +539,8 @@ func (lc *LocationController) SearchNearbyLocations(c *gin.Context) {
 	var locations []models.Location
 	query := `
 		SELECT * FROM mm_locations 
-		WHERE ST_DWithin(
+
+		AND ST_DWithin(
 			ST_SetSRID(ST_MakePoint(longitude, latitude), 4326),
 			ST_SetSRID(ST_MakePoint(?, ?), 4326),
 			?
@@ -533,12 +565,12 @@ func (lc *LocationController) SearchNearbyLocations(c *gin.Context) {
 	locationResponses := make([]models.LocationResponse, len(locations))
 	for i, location := range locations {
 		response := location.ToResponse()
-		
-		// Count memories for this location
+
+		// Count memories for this location (only non-null location_id)
 		var memoryCount int64
-		database.DB.Model(&models.Memory{}).Where("location_id = ?", location.ID).Count(&memoryCount)
+		database.DB.Model(&models.Memory{}).Where("location_id = ? AND location_id IS NOT NULL", location.ID).Count(&memoryCount)
 		response.MemoryCount = memoryCount
-		
+
 		locationResponses[i] = response
 	}
 
@@ -573,7 +605,7 @@ func (lc *LocationController) GetLocationMemories(c *gin.Context) {
 		return
 	}
 
-	// Verify location exists
+	// Verify location exists (excludes soft deleted records)
 	var location models.Location
 	if err := database.DB.Where("uuid = ?", locationUUID).First(&location).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -594,16 +626,16 @@ func (lc *LocationController) GetLocationMemories(c *gin.Context) {
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	
+
 	if limit > 100 {
 		limit = 100
 	}
-	
+
 	offset := (page - 1) * limit
 
 	// Build query for memories
 	query := database.DB.Preload("User").Preload("Location").Preload("Media").
-		Where("location_id = ?", location.ID)
+		Where("location_id = ? AND location_id IS NOT NULL", location.ID)
 
 	// Apply public filter
 	if isPublicStr := c.Query("is_public"); isPublicStr != "" {

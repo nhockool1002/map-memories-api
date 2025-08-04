@@ -13,7 +13,8 @@ type ShopItem struct {
 	UUID        uuid.UUID      `json:"uuid" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex"`
 	Name        string         `json:"name" gorm:"not null" validate:"required,max=255"`
 	Description string         `json:"description" gorm:"type:text"`
-	ImageURL    string         `json:"image_url" gorm:"type:text;not null"`
+	ImageBase64 string         `json:"image_base64" gorm:"type:text;not null"`
+	ImageURL    string         `json:"image_url" gorm:"-"` // Virtual field for backward compatibility
 	Price       int64          `json:"price" gorm:"not null" validate:"required,min=0"`
 	Stock       int            `json:"stock" gorm:"not null;default:0" validate:"min=0"`
 	ItemType    string         `json:"item_type" gorm:"size:50;not null;default:'marker'" validate:"required"`
@@ -73,7 +74,7 @@ func (TransactionLog) TableName() string {
 type ShopItemCreateRequest struct {
 	Name        string `json:"name" validate:"required,max=255"`
 	Description string `json:"description"`
-	ImageURL    string `json:"image_url" validate:"required"`
+	ImageBase64 string `json:"image_base64" validate:"required"`
 	Price       int64  `json:"price" validate:"required,min=0"`
 	Stock       int    `json:"stock" validate:"min=0"`
 	ItemType    string `json:"item_type" validate:"required"`
@@ -83,7 +84,7 @@ type ShopItemCreateRequest struct {
 type ShopItemUpdateRequest struct {
 	Name        string `json:"name" validate:"max=255"`
 	Description string `json:"description"`
-	ImageURL    string `json:"image_url"`
+	ImageBase64 string `json:"image_base64"`
 	Price       int64  `json:"price" validate:"min=0"`
 	Stock       int    `json:"stock" validate:"min=0"`
 	ItemType    string `json:"item_type"`
@@ -96,7 +97,7 @@ type ShopItemResponse struct {
 	UUID        uuid.UUID `json:"uuid"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
-	ImageURL    string    `json:"image_url"`
+	ImageBase64 string    `json:"image_base64"`
 	Price       int64     `json:"price"`
 	Stock       int       `json:"stock"`
 	ItemType    string    `json:"item_type"`
@@ -107,12 +108,15 @@ type ShopItemResponse struct {
 
 // ToResponse converts ShopItem to ShopItemResponse
 func (s *ShopItem) ToResponse() ShopItemResponse {
+	// Set ImageURL for backward compatibility
+	s.ImageURL = s.ImageBase64
+	
 	return ShopItemResponse{
 		ID:          s.ID,
 		UUID:        s.UUID,
 		Name:        s.Name,
 		Description: s.Description,
-		ImageURL:    s.ImageURL,
+		ImageBase64: s.ImageBase64,
 		Price:       s.Price,
 		Stock:       s.Stock,
 		ItemType:    s.ItemType,

@@ -150,7 +150,7 @@
       },
       "delete": {
         "method": "DELETE",
-        "url": "/admin/locations/{uuid}",
+        "url": "/locations/{uuid}",
         "auth_required": true,
         "admin_required": true,
         "description": "Delete a location (admin only)",
@@ -162,11 +162,14 @@
       "get_all": {
         "method": "GET",
         "url": "/memories",
-        "auth_required": false,
-        "description": "Get paginated list of public memories",
+        "auth_required": true,
+        "description": "Get paginated list of memories with filters",
         "query_params": {
           "page": "integer (default: 1)",
           "limit": "integer (default: 20, max: 100)",
+          "user_id": "integer (filter by user)",
+          "location_id": "integer (filter by location)",
+          "is_public": "boolean (filter by public status)",
           "search": "string (search in title and content)",
           "tags": "string (comma-separated tags)",
           "sort_by": "string (created_at, visit_date, title)",
@@ -296,58 +299,6 @@
         "response_code": 200,
         "response_format": "file_content"
       }
-    },
-    "admin": {
-      "get_all_memories": {
-        "method": "GET",
-        "url": "/admin/memories",
-        "auth_required": true,
-        "admin_required": true,
-        "description": "Get all memories (admin can see private memories)",
-        "query_params": {
-          "page": "integer (default: 1)",
-          "limit": "integer (default: 20, max: 100)",
-          "search": "string (search in title and content)",
-          "tags": "string (comma-separated tags)",
-          "sort_by": "string (created_at, visit_date, title)",
-          "sort_order": "string (asc, desc)"
-        },
-        "response_code": 200,
-        "response_format": "paginated_memories"
-      },
-      "get_all_media": {
-        "method": "GET",
-        "url": "/admin/media",
-        "auth_required": true,
-        "admin_required": true,
-        "description": "Get all media files (admin can see all media)",
-        "query_params": {
-          "memory_id": "integer (filter by memory)",
-          "media_type": "string (image, video)",
-          "page": "integer (default: 1)",
-          "limit": "integer (default: 20, max: 100)"
-        },
-        "response_code": 200,
-        "response_format": "paginated_media"
-      }
-    },
-    "utility": {
-      "health_check": {
-        "method": "GET",
-        "url": "/health",
-        "auth_required": false,
-        "description": "Check API health status",
-        "response_code": 200,
-        "response_format": "success_with_health_data"
-      },
-      "test_auth_header": {
-        "method": "GET",
-        "url": "/auth/test-header",
-        "auth_required": false,
-        "description": "Test endpoint for debugging authorization headers",
-        "response_code": 200,
-        "response_format": "success_with_auth_header_info"
-      }
     }
   },
   "response_formats": {
@@ -431,6 +382,7 @@
         "media_count": "integer",
         "user": "user_object",
         "location": "location_object",
+        "media": ["media_objects"],
         "created_at": "timestamp",
         "updated_at": "timestamp"
       }
@@ -474,23 +426,6 @@
       "message": "string",
       "data": ["media_objects"],
       "pagination": "pagination_object"
-    },
-    "success_with_health_data": {
-      "success": true,
-      "message": "string",
-      "data": {
-        "status": "string",
-        "database": "string"
-      }
-    },
-    "success_with_auth_header_info": {
-      "success": true,
-      "message": "string",
-      "data": {
-        "auth_header": "string",
-        "has_bearer_prefix": "boolean",
-        "header_length": "integer"
-      }
     },
     "file_content": "binary_file_content"
   },

@@ -20,13 +20,13 @@ func (d *DateOnly) UnmarshalJSON(data []byte) error {
 	if len(str) >= 2 && str[0] == '"' && str[len(str)-1] == '"' {
 		str = str[1 : len(str)-1]
 	}
-	
+
 	// Parse date in YYYY-MM-DD format
 	t, err := time.Parse("2006-01-02", str)
 	if err != nil {
 		return err
 	}
-	
+
 	d.Time = t
 	return nil
 }
@@ -40,7 +40,7 @@ type Memory struct {
 	ID         uint           `json:"id" gorm:"primaryKey"`
 	UUID       uuid.UUID      `json:"uuid" gorm:"type:uuid;default:gen_random_uuid();uniqueIndex"`
 	UserID     uint           `json:"user_id" gorm:"not null"`
-	LocationID uint           `json:"location_id" gorm:"not null"`
+	LocationID *uint          `json:"location_id" gorm:"index"`
 	Title      string         `json:"title" gorm:"not null" validate:"required,max=255"`
 	Content    string         `json:"content" gorm:"type:text;not null" validate:"required"`
 	VisitDate  *time.Time     `json:"visit_date"`
@@ -51,9 +51,9 @@ type Memory struct {
 	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Relationships
-	User     User    `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Location Location `json:"location,omitempty" gorm:"foreignKey:LocationID"`
-	Media    []Media `json:"media,omitempty" gorm:"foreignKey:MemoryID"`
+	User     User         `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Location Location     `json:"location,omitempty" gorm:"foreignKey:LocationID"`
+	Media    []Media      `json:"media,omitempty" gorm:"foreignKey:MemoryID"`
 	Likes    []MemoryLike `json:"likes,omitempty" gorm:"foreignKey:MemoryID"`
 }
 
@@ -63,7 +63,7 @@ func (Memory) TableName() string {
 
 // MemoryCreateRequest represents the request for creating a memory
 type MemoryCreateRequest struct {
-	LocationID uint      `json:"location_id" validate:"required"`
+	LocationID *uint     `json:"location_id"` // Optional location reference
 	Title      string    `json:"title" validate:"required,max=255"`
 	Content    string    `json:"content" validate:"required"`
 	VisitDate  *DateOnly `json:"visit_date"`
@@ -73,11 +73,11 @@ type MemoryCreateRequest struct {
 
 // MemoryUpdateRequest represents the request for updating a memory
 type MemoryUpdateRequest struct {
-	Title     string     `json:"title" validate:"max=255"`
-	Content   string     `json:"content"`
-	VisitDate *DateOnly  `json:"visit_date"`
-	IsPublic  bool       `json:"is_public"`
-	Tags      []string   `json:"tags"`
+	Title     string    `json:"title" validate:"max=255"`
+	Content   string    `json:"content"`
+	VisitDate *DateOnly `json:"visit_date"`
+	IsPublic  bool      `json:"is_public"`
+	Tags      []string  `json:"tags"`
 }
 
 // MemoryResponse represents the memory response with additional data
@@ -93,7 +93,7 @@ type MemoryResponse struct {
 	MediaCount int64             `json:"media_count"`
 	IsLiked    bool              `json:"is_liked,omitempty"` // for current user
 	User       UserResponse      `json:"user"`
-	Location   LocationResponse  `json:"location"`
+	Location   *LocationResponse `json:"location,omitempty"`
 	Media      []MediaResponse   `json:"media,omitempty"`
 	CreatedAt  time.Time         `json:"created_at"`
 	UpdatedAt  time.Time         `json:"updated_at"`
@@ -123,7 +123,8 @@ func (m *Memory) ToResponse() MemoryResponse {
 	}
 
 	if m.Location.ID != 0 {
-		response.Location = m.Location.ToResponse()
+		locationResp := m.Location.ToResponse()
+		response.Location = &locationResp
 	}
 
 	if m.Media != nil {
@@ -139,15 +140,15 @@ func (m *Memory) ToResponse() MemoryResponse {
 
 // MemoryListRequest represents the request for listing memories
 type MemoryListRequest struct {
-	UserID     *uint   `json:"user_id"`
-	LocationID *uint   `json:"location_id"`
-	IsPublic   *bool   `json:"is_public"`
+	UserID     *uint    `json:"user_id"`
+	LocationID *uint    `json:"location_id"`
+	IsPublic   *bool    `json:"is_public"`
 	Tags       []string `json:"tags"`
-	Search     string  `json:"search"`
-	Limit      int     `json:"limit" validate:"min=1,max=100"`
-	Offset     int     `json:"offset" validate:"min=0"`
-	SortBy     string  `json:"sort_by" validate:"oneof=created_at visit_date title"`
-	SortOrder  string  `json:"sort_order" validate:"oneof=asc desc"`
+	Search     string   `json:"search"`
+	Limit      int      `json:"limit" validate:"min=1,max=100"`
+	Offset     int      `json:"offset" validate:"min=0"`
+	SortBy     string   `json:"sort_by" validate:"oneof=created_at visit_date title"`
+	SortOrder  string   `json:"sort_order" validate:"oneof=asc desc"`
 }
 
 // MemoryNearbyRequest represents the request for finding memories near a location

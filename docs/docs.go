@@ -2778,7 +2778,7 @@ const docTemplate = `{
         "models.ShopItemCreateRequest": {
             "type": "object",
             "required": [
-                "image_url",
+                "image_base64",
                 "item_type",
                 "name",
                 "price"
@@ -2787,7 +2787,7 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "image_url": {
+                "image_base64": {
                     "type": "string"
                 },
                 "item_type": {
@@ -2819,7 +2819,7 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "image_url": {
+                "image_base64": {
                     "type": "string"
                 },
                 "is_active": {
@@ -2851,7 +2851,7 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "image_url": {
+                "image_base64": {
                     "type": "string"
                 },
                 "is_active": {

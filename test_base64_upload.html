@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Base64 Media Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"], input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .preview {
+            max-width: 300px;
+            max-height: 300px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Base64 Media Upload API</h1>
+    
+    <form id="uploadForm">
+        <div class="form-group">
+            <label for="token">JWT Token:</label>
+            <input type="text" id="token" placeholder="Enter your JWT token" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="memoryId">Memory ID:</label>
+            <input type="number" id="memoryId" placeholder="Enter memory ID" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="displayOrder">Display Order:</label>
+            <input type="number" id="displayOrder" placeholder="Display order (optional)" value="0">
+        </div>
+        
+        <div class="form-group">
+            <label for="file">Select File:</label>
+            <input type="file" id="file" accept="image/*,video/*" required>
+        </div>
+        
+        <button type="submit">Upload Media</button>
+    </form>
+    
+    <div id="result" class="result" style="display: none;"></div>
+    
+    <div id="preview" style="margin-top: 20px;"></div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('token').value;
+            const memoryId = document.getElementById('memoryId').value;
+            const displayOrder = document.getElementById('displayOrder').value;
+            const file = document.getElementById('file').files[0];
+            
+            if (!file) {
+                showResult('Please select a file', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('memory_id', memoryId);
+            formData.append('display_order', displayOrder);
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/v1/media/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('Upload successful! Media ID: ' + result.data.uuid, 'success');
+                    
+                    // Show preview if it's an image
+                    if (result.data.media_type === 'image') {
+                        showPreview(result.data.file_path);
+                    }
+                } else {
+                    showResult('Upload failed: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showResult('Error: ' + error.message, 'error');
+            }
+        });
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = 'result ' + type;
+            resultDiv.style.display = 'block';
+        }
+        
+        function showPreview(base64Data) {
+            const previewDiv = document.getElementById('preview');
+            previewDiv.innerHTML = '<h3>Preview:</h3><img src="' + base64Data + '" class="preview" alt="Preview">';
+        }
+    </script>
+</body>
+</html> 

@@ -47,6 +47,7 @@ services:
       - "8222:8080"
     volumes:
       - uploads_data:/app/uploads
+      - ./media:/app/media
     networks:
       - mm_network
     depends_on:
@@ -78,10 +79,8 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
     networks:
       - mm_network
     depends_on:

@@ -10,7 +10,6 @@ import (
 	"map-memories-api/utils"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +31,7 @@ type ShopController struct{}
 func (sc *ShopController) CreateShopItem(c *gin.Context) {
 	var req models.ShopItemCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Invalid request data",
 			"INVALID_REQUEST",
 			map[string]interface{}{"error": err.Error()},
@@ -42,7 +41,7 @@ func (sc *ShopController) CreateShopItem(c *gin.Context) {
 
 	// Validate request
 	if err := utils.ValidateStruct(req); err != nil {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Validation failed",
 			"VALIDATION_ERROR",
 			map[string]interface{}{"errors": err},
@@ -53,7 +52,7 @@ func (sc *ShopController) CreateShopItem(c *gin.Context) {
 	shopItem := models.ShopItem{
 		Name:        req.Name,
 		Description: req.Description,
-		ImageURL:    req.ImageURL,
+		ImageBase64: req.ImageBase64,
 		Price:       req.Price,
 		Stock:       req.Stock,
 		ItemType:    req.ItemType,
@@ -61,7 +60,7 @@ func (sc *ShopController) CreateShopItem(c *gin.Context) {
 	}
 
 	if err := database.DB.Create(&shopItem).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to create shop item",
 			"INTERNAL_ERROR",
 			nil,
@@ -69,7 +68,7 @@ func (sc *ShopController) CreateShopItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, models.APIResponse(
+	c.JSON(http.StatusCreated, models.SuccessResponse(
 		"Shop item created successfully",
 		shopItem.ToResponse(),
 	))
@@ -93,7 +92,7 @@ func (sc *ShopController) CreateShopItem(c *gin.Context) {
 func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 	itemUUID := c.Param("uuid")
 	if itemUUID == "" {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Item UUID is required",
 			"MISSING_PARAMETER",
 			nil,
@@ -103,7 +102,7 @@ func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 
 	var req models.ShopItemUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Invalid request data",
 			"INVALID_REQUEST",
 			map[string]interface{}{"error": err.Error()},
@@ -113,7 +112,7 @@ func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 
 	// Validate request
 	if err := utils.ValidateStruct(req); err != nil {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Validation failed",
 			"VALIDATION_ERROR",
 			map[string]interface{}{"errors": err},
@@ -125,13 +124,13 @@ func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 	var shopItem models.ShopItem
 	if err := database.DB.Where("uuid = ?", itemUUID).First(&shopItem).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, models.APIResponseWithCode(
+			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"Shop item not found",
 				"ITEM_NOT_FOUND",
 				nil,
 			))
 		} else {
-			c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 				"Failed to find shop item",
 				"INTERNAL_ERROR",
 				nil,
@@ -147,8 +146,8 @@ func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 	if req.Description != "" {
 		shopItem.Description = req.Description
 	}
-	if req.ImageURL != "" {
-		shopItem.ImageURL = req.ImageURL
+	if req.ImageBase64 != "" {
+		shopItem.ImageBase64 = req.ImageBase64
 	}
 	if req.Price > 0 {
 		shopItem.Price = req.Price
@@ -164,7 +163,7 @@ func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 	}
 
 	if err := database.DB.Save(&shopItem).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to update shop item",
 			"INTERNAL_ERROR",
 			nil,
@@ -172,7 +171,7 @@ func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse(
+	c.JSON(http.StatusOK, models.SuccessResponse(
 		"Shop item updated successfully",
 		shopItem.ToResponse(),
 	))
@@ -195,7 +194,7 @@ func (sc *ShopController) UpdateShopItem(c *gin.Context) {
 func (sc *ShopController) DeleteShopItem(c *gin.Context) {
 	itemUUID := c.Param("uuid")
 	if itemUUID == "" {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Item UUID is required",
 			"MISSING_PARAMETER",
 			nil,
@@ -207,13 +206,13 @@ func (sc *ShopController) DeleteShopItem(c *gin.Context) {
 	var shopItem models.ShopItem
 	if err := database.DB.Where("uuid = ?", itemUUID).First(&shopItem).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, models.APIResponseWithCode(
+			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"Shop item not found",
 				"ITEM_NOT_FOUND",
 				nil,
 			))
 		} else {
-			c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 				"Failed to find shop item",
 				"INTERNAL_ERROR",
 				nil,
@@ -224,7 +223,7 @@ func (sc *ShopController) DeleteShopItem(c *gin.Context) {
 
 	// Soft delete
 	if err := database.DB.Delete(&shopItem).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to delete shop item",
 			"INTERNAL_ERROR",
 			nil,
@@ -232,7 +231,7 @@ func (sc *ShopController) DeleteShopItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse(
+	c.JSON(http.StatusOK, models.SuccessResponse(
 		"Shop item deleted successfully",
 		nil,
 	))
@@ -287,7 +286,7 @@ func (sc *ShopController) GetShopItems(c *gin.Context) {
 	// Get total count
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to count shop items",
 			"INTERNAL_ERROR",
 			nil,
@@ -298,7 +297,7 @@ func (sc *ShopController) GetShopItems(c *gin.Context) {
 	// Get items
 	var shopItems []models.ShopItem
 	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&shopItems).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to fetch shop items",
 			"INTERNAL_ERROR",
 			nil,
@@ -312,7 +311,7 @@ func (sc *ShopController) GetShopItems(c *gin.Context) {
 		itemResponses = append(itemResponses, item.ToResponse())
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse(
+	c.JSON(http.StatusOK, models.SuccessResponse(
 		"Shop items retrieved successfully",
 		map[string]interface{}{
 			"items": itemResponses,
@@ -340,7 +339,7 @@ func (sc *ShopController) GetShopItems(c *gin.Context) {
 func (sc *ShopController) GetShopItem(c *gin.Context) {
 	itemUUID := c.Param("uuid")
 	if itemUUID == "" {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Item UUID is required",
 			"MISSING_PARAMETER",
 			nil,
@@ -351,13 +350,13 @@ func (sc *ShopController) GetShopItem(c *gin.Context) {
 	var shopItem models.ShopItem
 	if err := database.DB.Where("uuid = ?", itemUUID).First(&shopItem).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, models.APIResponseWithCode(
+			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"Shop item not found",
 				"ITEM_NOT_FOUND",
 				nil,
 			))
 		} else {
-			c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 				"Failed to find shop item",
 				"INTERNAL_ERROR",
 				nil,
@@ -366,7 +365,7 @@ func (sc *ShopController) GetShopItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse(
+	c.JSON(http.StatusOK, models.SuccessResponse(
 		"Shop item retrieved successfully",
 		shopItem.ToResponse(),
 	))
@@ -388,7 +387,7 @@ func (sc *ShopController) GetShopItem(c *gin.Context) {
 func (sc *ShopController) PurchaseItem(c *gin.Context) {
 	userID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.APIResponseWithCode(
+		c.JSON(http.StatusUnauthorized, models.ErrorResponseWithCode(
 			"Authentication required",
 			"UNAUTHORIZED",
 			nil,
@@ -398,7 +397,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 
 	var req models.PurchaseItemRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Invalid request data",
 			"INVALID_REQUEST",
 			map[string]interface{}{"error": err.Error()},
@@ -408,7 +407,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 
 	// Validate request
 	if err := utils.ValidateStruct(req); err != nil {
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Validation failed",
 			"VALIDATION_ERROR",
 			map[string]interface{}{"errors": err},
@@ -429,13 +428,13 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 	if err := tx.Where("id = ? AND is_active = ?", req.ShopItemID, true).First(&shopItem).Error; err != nil {
 		tx.Rollback()
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, models.APIResponseWithCode(
+			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"Shop item not found or inactive",
 				"ITEM_NOT_FOUND",
 				nil,
 			))
 		} else {
-			c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 				"Failed to find shop item",
 				"INTERNAL_ERROR",
 				nil,
@@ -444,10 +443,25 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 		return
 	}
 
+	// For markers, quantity must always be 1 (one-time purchase)
+	if shopItem.ItemType == "marker" && req.Quantity != 1 {
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
+			"Markers can only be purchased one at a time",
+			"INVALID_QUANTITY",
+			map[string]interface{}{
+				"item_type": shopItem.ItemType,
+				"requested_quantity": req.Quantity,
+				"allowed_quantity": 1,
+			},
+		))
+		return
+	}
+
 	// Check stock
 	if shopItem.Stock < req.Quantity {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Insufficient stock",
 			"INSUFFICIENT_STOCK",
 			map[string]interface{}{
@@ -465,7 +479,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 	var user models.User
 	if err := tx.First(&user, userID).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to find user",
 			"INTERNAL_ERROR",
 			nil,
@@ -476,7 +490,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 	// Check user balance
 	if user.Currency < totalCost {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, models.APIResponseWithCode(
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
 			"Insufficient balance",
 			"INSUFFICIENT_BALANCE",
 			map[string]interface{}{
@@ -491,7 +505,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 	user.Currency -= totalCost
 	if err := tx.Save(&user).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to update user balance",
 			"INTERNAL_ERROR",
 			nil,
@@ -503,7 +517,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 	shopItem.Stock -= req.Quantity
 	if err := tx.Save(&shopItem).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to update item stock",
 			"INTERNAL_ERROR",
 			nil,
@@ -511,7 +525,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 		return
 	}
 
-	// Check if user already owns this item
+	// Check if user already owns this item (one-time purchase for markers)
 	var existingUserItem models.UserItem
 	err := tx.Where("user_id = ? AND shop_item_id = ?", userID, req.ShopItemID).First(&existingUserItem).Error
 	
@@ -520,11 +534,11 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 		userItem := models.UserItem{
 			UserID:     userID,
 			ShopItemID: req.ShopItemID,
-			Quantity:   req.Quantity,
+			Quantity:   1, // Always 1 for markers (one-time purchase)
 		}
 		if err := tx.Create(&userItem).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 				"Failed to create user item",
 				"INTERNAL_ERROR",
 				nil,
@@ -532,20 +546,20 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 			return
 		}
 	} else if err == nil {
-		// Update existing user item quantity
-		existingUserItem.Quantity += req.Quantity
-		if err := tx.Save(&existingUserItem).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
-				"Failed to update user item",
-				"INTERNAL_ERROR",
-				nil,
-			))
-			return
-		}
+		// User already owns this item - prevent duplicate purchase
+		tx.Rollback()
+		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
+			"You already own this marker. Each marker can only be purchased once.",
+			"ALREADY_OWNED",
+			map[string]interface{}{
+				"item_name": shopItem.Name,
+				"item_id":   req.ShopItemID,
+			},
+		))
+		return
 	} else {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to check user items",
 			"INTERNAL_ERROR",
 			nil,
@@ -558,12 +572,12 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 		UserID:      userID,
 		Type:        "purchase",
 		Amount:      -totalCost, // Negative for purchase
-		Description: "Purchased " + strconv.Itoa(req.Quantity) + "x " + shopItem.Name,
+		Description: "Purchased " + shopItem.Name + " (one-time purchase)",
 	}
 
 	if err := tx.Create(&transactionLog).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to create transaction log",
 			"INTERNAL_ERROR",
 			nil,
@@ -573,14 +587,15 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 
 	tx.Commit()
 
-	c.JSON(http.StatusOK, models.APIResponse(
+	c.JSON(http.StatusOK, models.SuccessResponse(
 		"Item purchased successfully",
 		map[string]interface{}{
 			"item_name":      shopItem.Name,
-			"quantity":       req.Quantity,
+			"quantity":       1, // Always 1 for markers
 			"total_cost":     totalCost,
 			"new_balance":    user.Currency,
 			"remaining_stock": shopItem.Stock,
+			"is_one_time":    shopItem.ItemType == "marker",
 		},
 	))
 }
@@ -602,7 +617,7 @@ func (sc *ShopController) PurchaseItem(c *gin.Context) {
 func (sc *ShopController) GetUserItems(c *gin.Context) {
 	userID, exists := middleware.GetCurrentUserID(c)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, models.APIResponseWithCode(
+		c.JSON(http.StatusUnauthorized, models.ErrorResponseWithCode(
 			"Authentication required",
 			"UNAUTHORIZED",
 			nil,
@@ -642,7 +657,7 @@ func (sc *ShopController) GetUserItems(c *gin.Context) {
 	// Get total count
 	var total int64
 	if err := query.Model(&models.UserItem{}).Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to count user items",
 			"INTERNAL_ERROR",
 			nil,
@@ -653,7 +668,7 @@ func (sc *ShopController) GetUserItems(c *gin.Context) {
 	// Get items
 	var userItems []models.UserItem
 	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&userItems).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponseWithCode(
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to fetch user items",
 			"INTERNAL_ERROR",
 			nil,
@@ -667,7 +682,7 @@ func (sc *ShopController) GetUserItems(c *gin.Context) {
 		itemResponses = append(itemResponses, item.ToResponse())
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse(
+	c.JSON(http.StatusOK, models.SuccessResponse(
 		"User items retrieved successfully",
 		map[string]interface{}{
 			"items": itemResponses,
