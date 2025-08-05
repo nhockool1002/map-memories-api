@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"map-memories-api/database"
 	"map-memories-api/middleware"
@@ -18,7 +20,7 @@ type MediaController struct{}
 
 // UploadMedia godoc
 // @Summary Upload media file
-// @Description Upload an image or video file for a memory
+// @Description Upload an image or video file for a memory. The file will be automatically converted to base64 and stored in the database.
 // @Tags Media
 // @Accept multipart/form-data
 // @Produce json
@@ -93,12 +95,12 @@ func (mc *MediaController) UploadMedia(c *gin.Context) {
 		return
 	}
 
-	// Save file
-	fileInfo, err := utils.SaveUploadedFile(file)
+	// Save file as base64
+	fileInfo, err := utils.SaveUploadedFileAsBase64(file)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponseWithCode(
-			"Failed to save file: "+err.Error(),
-			"FILE_SAVE_ERROR",
+			"Failed to convert file to base64: "+err.Error(),
+			"FILE_CONVERSION_ERROR",
 			nil,
 		))
 		return
@@ -117,8 +119,6 @@ func (mc *MediaController) UploadMedia(c *gin.Context) {
 	}
 
 	if err := database.DB.Create(&media).Error; err != nil {
-		// Clean up uploaded file if database save fails
-		utils.DeleteFile(fileInfo.FilePath)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to save media record",
 			"INTERNAL_ERROR",
@@ -148,11 +148,11 @@ func (mc *MediaController) UploadMedia(c *gin.Context) {
 func (mc *MediaController) GetMedia(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	
+
 	if limit > 100 {
 		limit = 100
 	}
-	
+
 	offset := (page - 1) * limit
 
 	// Build query
@@ -215,7 +215,7 @@ func (mc *MediaController) GetMedia(c *gin.Context) {
 // @Router /media/{uuid} [get]
 func (mc *MediaController) GetMediaFile(c *gin.Context) {
 	uuidStr := c.Param("uuid")
-	
+
 	// Parse UUID
 	mediaUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
@@ -263,7 +263,7 @@ func (mc *MediaController) GetMediaFile(c *gin.Context) {
 // @Router /media/{uuid}/file [get]
 func (mc *MediaController) ServeMediaFile(c *gin.Context) {
 	uuidStr := c.Param("uuid")
-	
+
 	// Parse UUID
 	mediaUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
@@ -293,12 +293,34 @@ func (mc *MediaController) ServeMediaFile(c *gin.Context) {
 		return
 	}
 
-	// Check if file exists
-	if !utils.FileExists(media.FilePath) {
+	// Check if file_path contains base64 data URL
+	if !strings.HasPrefix(media.FilePath, "data:") {
 		c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
-			"Media file not found on disk",
-			"FILE_NOT_FOUND",
+			"Media file format not supported",
+			"FILE_FORMAT_ERROR",
 			nil,
+		))
+		return
+	}
+
+	// Extract base64 data from data URL
+	parts := strings.Split(media.FilePath, ",")
+	if len(parts) != 2 {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+			"Invalid base64 data format",
+			"INVALID_BASE64_FORMAT",
+			nil,
+		))
+		return
+	}
+
+	// Decode base64 data
+	fileData, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+			"Failed to decode base64 data",
+			"BASE64_DECODE_ERROR",
+			err.Error(),
 		))
 		return
 	}
@@ -308,8 +330,8 @@ func (mc *MediaController) ServeMediaFile(c *gin.Context) {
 	c.Header("Content-Disposition", "inline; filename=\""+media.OriginalFilename+"\"")
 	c.Header("Cache-Control", "public, max-age=31536000") // 1 year cache
 
-	// Serve file
-	c.File(media.FilePath)
+	// Serve base64 decoded data
+	c.Data(http.StatusOK, media.MimeType, fileData)
 }
 
 // UpdateMedia godoc
@@ -467,17 +489,7 @@ func (mc *MediaController) DeleteMedia(c *gin.Context) {
 		return
 	}
 
-	// Delete file from filesystem
-	if utils.FileExists(media.FilePath) {
-		if err := utils.DeleteFile(media.FilePath); err != nil {
-			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
-				"Failed to delete media file",
-				"FILE_DELETE_ERROR",
-				err.Error(),
-			))
-			return
-		}
-	}
+	// No need to delete file from filesystem since it's stored as base64 in database
 
 	// Delete media record
 	if err := database.DB.Delete(&media).Error; err != nil {
@@ -507,7 +519,7 @@ func (mc *MediaController) DeleteMedia(c *gin.Context) {
 // @Router /memories/{uuid}/media [get]
 func (mc *MediaController) GetMemoryMedia(c *gin.Context) {
 	memoryUuidStr := c.Param("uuid")
-	
+
 	// Parse UUID
 	memoryUUID, err := uuid.Parse(memoryUuidStr)
 	if err != nil {

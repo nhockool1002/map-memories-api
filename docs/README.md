@@ -101,6 +101,40 @@ curl -X POST http://localhost:8222/api/v1/auth/login \
   }'
 ```
 
+**Response sẽ bao gồm user_items:**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": 1,
+      "username": "user123",
+      "email": "user@example.com",
+      "full_name": "John Doe",
+      "is_admin": false,
+      "currency": 1000,
+      "user_items": [
+        {
+          "id": 1,
+          "quantity": 2,
+          "shop_item": {
+            "id": 1,
+            "name": "Red Marker",
+            "description": "A beautiful red marker",
+            "price": 100,
+            "item_type": "marker"
+          }
+        }
+      ]
+    },
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token_type": "Bearer",
+    "expires_in": 86400
+  }
+}
+```
+
 ### 3. Use Token
 ```bash
 curl -X GET http://localhost:8222/api/v1/auth/profile \

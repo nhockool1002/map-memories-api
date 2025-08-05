@@ -32,6 +32,9 @@ Authentication: Bearer Token (JWT)
         "email": "string",
         "full_name": "string",
         "avatar_url": "string",
+        "is_admin": false,
+        "currency": 0,
+        "user_items": [],
         "created_at": "timestamp",
         "updated_at": "timestamp"
       },
@@ -63,6 +66,30 @@ Authentication: Bearer Token (JWT)
         "email": "string",
         "full_name": "string",
         "avatar_url": "string",
+        "is_admin": false,
+        "currency": 1000,
+        "user_items": [
+          {
+            "id": 1,
+            "uuid": "uuid",
+            "quantity": 2,
+            "shop_item": {
+              "id": 1,
+              "uuid": "uuid",
+              "name": "Red Marker",
+              "description": "A beautiful red marker",
+              "image_base64": "data:image/png;base64,...",
+              "price": 100,
+              "stock": 50,
+              "item_type": "marker",
+              "is_active": true,
+              "created_at": "timestamp",
+              "updated_at": "timestamp"
+            },
+            "created_at": "timestamp",
+            "updated_at": "timestamp"
+          }
+        ],
         "created_at": "timestamp",
         "updated_at": "timestamp"
       },
@@ -88,6 +115,30 @@ Authentication: Bearer Token (JWT)
       "email": "string",
       "full_name": "string",
       "avatar_url": "string",
+      "is_admin": false,
+      "currency": 1000,
+      "user_items": [
+        {
+          "id": 1,
+          "uuid": "uuid",
+          "quantity": 2,
+          "shop_item": {
+            "id": 1,
+            "uuid": "uuid",
+            "name": "Red Marker",
+            "description": "A beautiful red marker",
+            "image_base64": "data:image/png;base64,...",
+            "price": 100,
+            "stock": 50,
+            "item_type": "marker",
+            "is_active": true,
+            "created_at": "timestamp",
+            "updated_at": "timestamp"
+          },
+          "created_at": "timestamp",
+          "updated_at": "timestamp"
+        }
+      ],
       "created_at": "timestamp",
       "updated_at": "timestamp"
     }
@@ -114,6 +165,30 @@ Authentication: Bearer Token (JWT)
       "email": "string",
       "full_name": "string",
       "avatar_url": "string",
+      "is_admin": false,
+      "currency": 1000,
+      "user_items": [
+        {
+          "id": 1,
+          "uuid": "uuid",
+          "quantity": 2,
+          "shop_item": {
+            "id": 1,
+            "uuid": "uuid",
+            "name": "Red Marker",
+            "description": "A beautiful red marker",
+            "image_base64": "data:image/png;base64,...",
+            "price": 100,
+            "stock": 50,
+            "item_type": "marker",
+            "is_active": true,
+            "created_at": "timestamp",
+            "updated_at": "timestamp"
+          },
+          "created_at": "timestamp",
+          "updated_at": "timestamp"
+        }
+      ],
       "created_at": "timestamp",
       "updated_at": "timestamp"
     }
@@ -358,7 +433,7 @@ Authentication: Bearer Token (JWT)
 
 2.7 Delete Location (Admin Only)
 - Method: DELETE
-- URL: /admin/locations/{uuid}
+- URL: /locations/{uuid}
 - Authentication: Required (Bearer Token + Admin)
 - Description: Delete a location (admin only)
 - Response: 200 OK
@@ -371,14 +446,17 @@ Authentication: Bearer Token (JWT)
 3. MEMORY ENDPOINTS
 ================================================================================
 
-3.1 Get All Memories (Public)
+3.1 Get All Memories (Protected)
 - Method: GET
 - URL: /memories
-- Authentication: Not required
-- Description: Get paginated list of public memories
+- Authentication: Required (Bearer Token)
+- Description: Get paginated list of memories with filters
 - Query Parameters:
   - page: integer (default: 1)
   - limit: integer (default: 20, max: 100)
+  - user_id: integer (filter by user)
+  - location_id: integer (filter by location)
+  - is_public: boolean (filter by public status)
   - search: string (search in title and content)
   - tags: string (comma-separated tags)
   - sort_by: string (created_at, visit_date, title)
@@ -414,6 +492,22 @@ Authentication: Bearer Token (JWT)
           "latitude": 10.123,
           "longitude": 106.456
         },
+        "media": [
+          {
+            "id": 1,
+            "uuid": "uuid",
+            "filename": "string",
+            "original_filename": "string",
+            "file_path": "string",
+            "file_size": 1024000,
+            "mime_type": "image/jpeg",
+            "media_type": "image",
+            "display_order": 1,
+            "url": "string",
+            "thumbnail_url": "string",
+            "created_at": "timestamp"
+          }
+        ],
         "created_at": "timestamp",
         "updated_at": "timestamp"
       }
@@ -463,6 +557,22 @@ Authentication: Bearer Token (JWT)
         "latitude": 10.123,
         "longitude": 106.456
       },
+      "media": [
+        {
+          "id": 1,
+          "uuid": "uuid",
+          "filename": "string",
+          "original_filename": "string",
+          "file_path": "string",
+          "file_size": 1024000,
+          "mime_type": "image/jpeg",
+          "media_type": "image",
+          "display_order": 1,
+          "url": "string",
+          "thumbnail_url": "string",
+          "created_at": "timestamp"
+        }
+      ],
       "created_at": "timestamp",
       "updated_at": "timestamp"
     }
@@ -512,6 +622,7 @@ Authentication: Bearer Token (JWT)
         "latitude": 10.123,
         "longitude": 106.456
       },
+      "media": [],
       "created_at": "timestamp",
       "updated_at": "timestamp"
     }
@@ -560,6 +671,22 @@ Authentication: Bearer Token (JWT)
         "latitude": 10.123,
         "longitude": 106.456
       },
+      "media": [
+        {
+          "id": 1,
+          "uuid": "uuid",
+          "filename": "string",
+          "original_filename": "string",
+          "file_path": "string",
+          "file_size": 1024000,
+          "mime_type": "image/jpeg",
+          "media_type": "image",
+          "display_order": 1,
+          "url": "string",
+          "thumbnail_url": "string",
+          "created_at": "timestamp"
+        }
+      ],
       "created_at": "timestamp",
       "updated_at": "timestamp"
     }
@@ -755,67 +882,12 @@ Authentication: Bearer Token (JWT)
   - File content
 
 ================================================================================
-5. ADMIN ENDPOINTS
-================================================================================
-
-5.1 Get All Memories (Admin)
-- Method: GET
-- URL: /admin/memories
-- Authentication: Required (Bearer Token + Admin)
-- Description: Get all memories (admin can see private memories)
-- Query Parameters: Same as public memories endpoint
-- Response: Same as public memories endpoint
-
-5.2 Get All Media (Admin)
-- Method: GET
-- URL: /admin/media
-- Authentication: Required (Bearer Token + Admin)
-- Description: Get all media files (admin can see all media)
-- Query Parameters: Same as protected media endpoint
-- Response: Same as protected media endpoint
-
-================================================================================
-6. UTILITY ENDPOINTS
-================================================================================
-
-6.1 Health Check
-- Method: GET
-- URL: /health
-- Authentication: Not required
-- Description: Check API health status
-- Response: 200 OK
-  {
-    "success": true,
-    "message": "Service is healthy",
-    "data": {
-      "status": "healthy",
-      "database": "connected"
-    }
-  }
-
-6.2 Test Auth Header
-- Method: GET
-- URL: /auth/test-header
-- Authentication: Not required
-- Description: Test endpoint for debugging authorization headers
-- Response: 200 OK
-  {
-    "success": true,
-    "message": "Authorization header received",
-    "data": {
-      "auth_header": "string",
-      "has_bearer_prefix": boolean,
-      "header_length": integer
-    }
-  }
-
-================================================================================
-7. ERROR RESPONSES
+5. ERROR RESPONSES
 ================================================================================
 
 All endpoints may return the following error responses:
 
-7.1 400 Bad Request
+5.1 400 Bad Request
 {
   "success": false,
   "message": "Validation error",
@@ -828,7 +900,7 @@ All endpoints may return the following error responses:
   }
 }
 
-7.2 401 Unauthorized
+5.2 401 Unauthorized
 {
   "success": false,
   "message": "Authentication required",
@@ -838,7 +910,7 @@ All endpoints may return the following error responses:
   }
 }
 
-7.3 403 Forbidden
+5.3 403 Forbidden
 {
   "success": false,
   "message": "Access denied",
@@ -848,7 +920,7 @@ All endpoints may return the following error responses:
   }
 }
 
-7.4 404 Not Found
+5.4 404 Not Found
 {
   "success": false,
   "message": "Resource not found",
@@ -858,7 +930,7 @@ All endpoints may return the following error responses:
   }
 }
 
-7.5 409 Conflict
+5.5 409 Conflict
 {
   "success": false,
   "message": "Resource conflict",
@@ -868,7 +940,7 @@ All endpoints may return the following error responses:
   }
 }
 
-7.6 413 Request Entity Too Large
+5.6 413 Request Entity Too Large
 {
   "success": false,
   "message": "File too large",
@@ -878,7 +950,7 @@ All endpoints may return the following error responses:
   }
 }
 
-7.7 500 Internal Server Error
+5.7 500 Internal Server Error
 {
   "success": false,
   "message": "Internal server error",
@@ -889,26 +961,26 @@ All endpoints may return the following error responses:
 }
 
 ================================================================================
-8. AUTHENTICATION
+6. AUTHENTICATION
 ================================================================================
 
-8.1 JWT Token Format
+6.1 JWT Token Format
 - Header: Authorization: Bearer <jwt_token>
 - Token expires in 24 hours
 - Token contains user information (ID, UUID, email, username)
 
-8.2 Admin Access
+6.2 Admin Access
 - Admin users have additional privileges
 - Admin emails: admin@mapmemories.com, administrator@mapmemories.com
 - Admin can access all resources regardless of ownership
 
-8.3 CORS Support
+6.3 CORS Support
 - All origins allowed in development
 - Supports common HTTP methods
 - Includes authorization headers
 
 ================================================================================
-9. PAGINATION
+7. PAGINATION
 ================================================================================
 
 All list endpoints support pagination:
@@ -917,41 +989,41 @@ All list endpoints support pagination:
 - Response includes pagination metadata
 
 ================================================================================
-10. FILE UPLOAD
+8. FILE UPLOAD
 ================================================================================
 
-10.1 Supported Formats
+8.1 Supported Formats
 - Images: JPEG, PNG, GIF
 - Videos: MP4, AVI, MOV
 - Maximum file size: 50MB
 
-10.2 Upload Process
+8.2 Upload Process
 - Files are stored in /app/uploads directory
 - Original filenames are preserved
 - Generated filenames are unique
 - Thumbnails are created for images
 
 ================================================================================
-11. SEARCH AND FILTERING
+9. SEARCH AND FILTERING
 ================================================================================
 
-11.1 Location Search
+9.1 Location Search
 - Search in name and description
 - Filter by country and city
 - Geospatial search within radius
 
-11.2 Memory Search
+9.2 Memory Search
 - Search in title and content
 - Filter by tags (comma-separated)
 - Filter by public status
 - Sort by various fields
 
-11.3 Media Filtering
+9.3 Media Filtering
 - Filter by memory ID
 - Filter by media type (image/video)
 
 ================================================================================
-12. RATE LIMITING
+10. RATE LIMITING
 ================================================================================
 
 - 60 requests per minute per IP
@@ -959,20 +1031,20 @@ All list endpoints support pagination:
 - Applies to all endpoints
 
 ================================================================================
-13. DEVELOPMENT NOTES
+11. DEVELOPMENT NOTES
 ================================================================================
 
-13.1 Default Admin User
+11.1 Default Admin User
 - Username: admin
 - Password: admin
 - Email: admin@map-memories.com
 
-13.2 Database
+11.2 Database
 - PostgreSQL with PostGIS extension
 - UUID primary keys for public endpoints
 - Soft deletes for data integrity
 
-13.3 Environment Variables
+11.3 Environment Variables
 - DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
 - JWT_SECRET, JWT_EXPIRY
 - UPLOAD_PATH, MAX_FILE_SIZE

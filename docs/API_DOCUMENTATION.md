@@ -106,6 +106,9 @@ Các endpoint trả về danh sách hỗ trợ pagination:
       "email": "test@example.com",
       "full_name": "Test User",
       "avatar_url": "",
+      "is_admin": false,
+      "currency": 0,
+      "user_items": [],
       "created_at": "2024-01-15T10:30:00Z",
       "updated_at": "2024-01-15T10:30:00Z"
     },
@@ -151,7 +154,40 @@ Các endpoint trả về danh sách hỗ trợ pagination:
   "success": true,
   "message": "Login successful",
   "data": {
-    "user": { /* User object */ },
+    "user": {
+      "id": 1,
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "username": "testuser",
+      "email": "test@example.com",
+      "full_name": "Test User",
+      "avatar_url": "",
+      "is_admin": false,
+      "currency": 1000,
+      "user_items": [
+        {
+          "id": 1,
+          "uuid": "550e8400-e29b-41d4-a716-446655440001",
+          "quantity": 2,
+          "shop_item": {
+            "id": 1,
+            "uuid": "550e8400-e29b-41d4-a716-446655440002",
+            "name": "Red Marker",
+            "description": "A beautiful red marker",
+            "image_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+            "price": 100,
+            "stock": 50,
+            "item_type": "marker",
+            "is_active": true,
+            "created_at": "2024-01-15T10:30:00Z",
+            "updated_at": "2024-01-15T10:30:00Z"
+          },
+          "created_at": "2024-01-15T10:30:00Z",
+          "updated_at": "2024-01-15T10:30:00Z"
+        }
+      ],
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
+    },
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "token_type": "Bearer",
     "expires_in": 86400
@@ -176,6 +212,30 @@ Các endpoint trả về danh sách hỗ trợ pagination:
     "email": "test@example.com",
     "full_name": "Test User",
     "avatar_url": "",
+    "is_admin": false,
+    "currency": 1000,
+    "user_items": [
+      {
+        "id": 1,
+        "uuid": "550e8400-e29b-41d4-a716-446655440001",
+        "quantity": 2,
+        "shop_item": {
+          "id": 1,
+          "uuid": "550e8400-e29b-41d4-a716-446655440002",
+          "name": "Red Marker",
+          "description": "A beautiful red marker",
+          "image_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+          "price": 100,
+          "stock": 50,
+          "item_type": "marker",
+          "is_active": true,
+          "created_at": "2024-01-15T10:30:00Z",
+          "updated_at": "2024-01-15T10:30:00Z"
+        },
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:30:00Z"
+      }
+    ],
     "created_at": "2024-01-15T10:30:00Z",
     "updated_at": "2024-01-15T10:30:00Z"
   }
@@ -200,7 +260,40 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 {
   "success": true,
   "message": "Profile updated successfully",
-  "data": { /* Updated user object */ }
+  "data": {
+    "id": 1,
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "username": "testuser",
+    "email": "test@example.com",
+    "full_name": "New Full Name",
+    "avatar_url": "https://example.com/avatar.jpg",
+    "is_admin": false,
+    "currency": 1000,
+    "user_items": [
+      {
+        "id": 1,
+        "uuid": "550e8400-e29b-41d4-a716-446655440001",
+        "quantity": 2,
+        "shop_item": {
+          "id": 1,
+          "uuid": "550e8400-e29b-41d4-a716-446655440002",
+          "name": "Red Marker",
+          "description": "A beautiful red marker",
+          "image_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+          "price": 100,
+          "stock": 50,
+          "item_type": "marker",
+          "is_active": true,
+          "created_at": "2024-01-15T10:30:00Z",
+          "updated_at": "2024-01-15T10:30:00Z"
+        },
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
 }
 ```
 
@@ -332,6 +425,7 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 ## 3.1 Danh sách kỷ niệm
 
 **Endpoint:** `GET /memories`
+**Auth:** Required
 
 ### Query Parameters
 - `page`, `limit`: Pagination
@@ -400,6 +494,7 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 ## 3.3 Chi tiết kỷ niệm
 
 **Endpoint:** `GET /memories/{uuid}`
+**Auth:** Required
 
 ### Response (200)
 ```json
@@ -493,6 +588,7 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 ## 4.2 Danh sách media
 
 **Endpoint:** `GET /media`
+**Auth:** Required
 
 ### Query Parameters
 - `page`, `limit`: Pagination
@@ -512,6 +608,7 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 ## 4.3 Thông tin media
 
 **Endpoint:** `GET /media/{uuid}`
+**Auth:** Required
 
 ### Response (200)
 ```json
@@ -535,6 +632,7 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 ## 4.5 Media của kỷ niệm
 
 **Endpoint:** `GET /memories/{memory_uuid}/media`
+**Auth:** Required
 
 ### Response (200)
 ```json
@@ -584,75 +682,9 @@ Các endpoint trả về danh sách hỗ trợ pagination:
 
 ---
 
-# 5. Admin API
+# 5. Integration Examples
 
-## 5.1 Xóa địa điểm (Admin only)
-
-**Endpoint:** `DELETE /admin/locations/{uuid}`
-**Auth:** Required (Admin only)
-
-### Response (200)
-```json
-{
-  "success": true,
-  "message": "Location deleted successfully",
-  "data": null
-}
-```
-
-### Conflict Error (409)
-```json
-{
-  "success": false,
-  "message": "Cannot delete location with associated memories",
-  "error": {
-    "code": "LOCATION_HAS_MEMORIES",
-    "details": {
-      "memory_count": 5
-    }
-  }
-}
-```
-
----
-
-# 6. Health Check
-
-## 6.1 Kiểm tra tình trạng service
-
-**Endpoint:** `GET /health`
-
-### Response (200)
-```json
-{
-  "success": true,
-  "message": "Service is healthy",
-  "data": {
-    "status": "healthy",
-    "database": "connected"
-  }
-}
-```
-
-### Unhealthy Response (503)
-```json
-{
-  "success": false,
-  "message": "Service unhealthy",
-  "error": {
-    "code": "SERVICE_UNAVAILABLE",
-    "details": {
-      "database": "unhealthy"
-    }
-  }
-}
-```
-
----
-
-# 7. Integration Examples
-
-## 7.1 Complete User Journey
+## 5.1 Complete User Journey
 
 ### Step 1: Đăng ký và đăng nhập
 ```bash
@@ -721,7 +753,7 @@ curl -X POST http://localhost:8222/api/v1/media/upload \
 curl "http://localhost:8222/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=2&limit=10"
 ```
 
-## 7.2 Error Handling Examples
+## 5.2 Error Handling Examples
 
 ### Invalid Authentication
 ```bash
@@ -777,7 +809,7 @@ curl -X POST http://localhost:8222/api/v1/locations \
 }
 ```
 
-## 7.3 Rate Limiting
+## 5.3 Rate Limiting
 
 API có giới hạn 60 requests/phút cho mỗi IP. Khi vượt giới hạn:
 
@@ -797,38 +829,38 @@ API có giới hạn 60 requests/phút cho mỗi IP. Khi vượt giới hạn:
 
 ---
 
-# 8. Best Practices
+# 6. Best Practices
 
-## 8.1 Authentication
+## 6.1 Authentication
 - Luôn kiểm tra token expiry
 - Implement refresh token logic
 - Store token securely (không trong localStorage cho production)
 
-## 8.2 File Upload
+## 6.2 File Upload
 - Validate file type trước khi upload
 - Implement progress tracking cho large files
 - Handle upload errors gracefully
 
-## 8.3 Geospatial Queries
+## 6.3 Geospatial Queries
 - Sử dụng reasonable radius values (tránh queries quá rộng)
 - Cache kết quả location search khi có thể
 - Validate coordinates trước khi gửi request
 
-## 8.4 Error Handling
+## 6.4 Error Handling
 - Luôn check `success` field trong response
 - Implement retry logic cho network errors
 - Show user-friendly error messages
 
-## 8.5 Performance
+## 6.5 Performance
 - Sử dụng pagination cho large datasets
 - Cache static data (như locations)
 - Implement lazy loading cho media
 
 ---
 
-# 9. SDK và Integration Libraries
+# 7. SDK và Integration Libraries
 
-## 9.1 JavaScript/TypeScript Example
+## 7.1 JavaScript/TypeScript Example
 
 ```typescript
 class MapMemoriesAPI {
@@ -880,7 +912,7 @@ class MapMemoriesAPI {
 }
 ```
 
-## 9.2 Python Example
+## 7.2 Python Example
 
 ```python
 import requests
@@ -930,7 +962,7 @@ class MapMemoriesClient:
 
 ---
 
-# 10. Changelog và Versioning
+# 8. Changelog và Versioning
 
 ## API Versioning
 - Current version: v1

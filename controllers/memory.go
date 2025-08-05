@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -52,23 +53,25 @@ func (mc *MemoryController) CreateMemory(c *gin.Context) {
 		return
 	}
 
-	// Verify location exists
-	var location models.Location
-	if err := database.DB.First(&location, req.LocationID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
-				"Location not found",
-				"LOCATION_NOT_FOUND",
+	// Verify location exists if provided
+	if req.LocationID != nil {
+		var location models.Location
+		if err := database.DB.Where("id = ?", *req.LocationID).First(&location).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
+					"Location not found",
+					"LOCATION_NOT_FOUND",
+					nil,
+				))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+				"Database error",
+				"INTERNAL_ERROR",
 				nil,
 			))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
-			"Database error",
-			"INTERNAL_ERROR",
-			nil,
-		))
-		return
 	}
 
 	// Create memory
@@ -76,10 +79,10 @@ func (mc *MemoryController) CreateMemory(c *gin.Context) {
 	if req.VisitDate != nil {
 		visitDate = &req.VisitDate.Time
 	}
-	
+
 	memory := models.Memory{
 		UserID:     userID,
-		LocationID: req.LocationID,
+		LocationID: req.LocationID, // Can be nil
 		Title:      req.Title,
 		Content:    req.Content,
 		VisitDate:  visitDate,
@@ -127,11 +130,11 @@ func (mc *MemoryController) CreateMemory(c *gin.Context) {
 func (mc *MemoryController) GetMemories(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	
+
 	if limit > 100 {
 		limit = 100
 	}
-	
+
 	offset := (page - 1) * limit
 
 	// Build query
@@ -146,7 +149,9 @@ func (mc *MemoryController) GetMemories(c *gin.Context) {
 
 	if locationIDStr := c.Query("location_id"); locationIDStr != "" {
 		if locationID, err := strconv.Atoi(locationIDStr); err == nil {
-			query = query.Where("location_id = ?", locationID)
+			// Only get memories for non-deleted locations
+			query = query.Joins("JOIN mm_locations ON mm_memories.location_id = mm_locations.id").
+				Where("mm_memories.location_id = ?", locationID)
 		}
 	}
 
@@ -168,7 +173,7 @@ func (mc *MemoryController) GetMemories(c *gin.Context) {
 	// Apply sorting
 	sortBy := c.DefaultQuery("sort_by", "created_at")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
-	
+
 	if sortBy == "visit_date" || sortBy == "title" || sortBy == "created_at" {
 		query = query.Order(sortBy + " " + sortOrder)
 	}
@@ -218,7 +223,7 @@ func (mc *MemoryController) GetMemories(c *gin.Context) {
 // @Router /memories/{uuid} [get]
 func (mc *MemoryController) GetMemory(c *gin.Context) {
 	uuidStr := c.Param("uuid")
-	
+
 	// Parse UUID
 	memoryUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
@@ -436,10 +441,52 @@ func (mc *MemoryController) DeleteMemory(c *gin.Context) {
 		return
 	}
 
+	// Use transaction to ensure data consistency
+	tx := database.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// Delete memory (soft delete)
-	if err := database.DB.Delete(&memory).Error; err != nil {
+	if err := tx.Delete(&memory).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to delete memory",
+			"INTERNAL_ERROR",
+			err.Error(),
+		))
+		return
+	}
+
+	// If memory has a location, check if it's the last memory for that location
+	if memory.LocationID != nil {
+		var remainingMemoryCount int64
+		tx.Model(&models.Memory{}).Where("location_id = ? AND id != ?", memory.LocationID, memory.ID).Count(&remainingMemoryCount)
+
+		if remainingMemoryCount == 0 {
+			// This is the last memory for this location, delete the location too
+			var location models.Location
+			if err := tx.Where("id = ?", memory.LocationID).First(&location).Error; err == nil {
+				log.Printf("Deleting location %d as it has no more memories", location.ID)
+				if err := tx.Delete(&location).Error; err != nil {
+					tx.Rollback()
+					c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+						"Failed to delete associated location",
+						"INTERNAL_ERROR",
+						err.Error(),
+					))
+					return
+				}
+			}
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+			"Failed to commit transaction",
 			"INTERNAL_ERROR",
 			err.Error(),
 		))

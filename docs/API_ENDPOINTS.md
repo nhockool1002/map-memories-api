@@ -23,6 +23,7 @@ http://localhost:8222/api/v1
 | `POST` | `/locations` | Tạo địa điểm mới | ✅ |
 | `GET` | `/locations/{uuid}` | Chi tiết địa điểm | ❌ |
 | `PUT` | `/locations/{uuid}` | Cập nhật địa điểm | ✅ |
+| `DELETE` | `/locations/{uuid}` | Xóa địa điểm (admin only) | ✅ Admin |
 | `GET` | `/locations/nearby` | Tìm địa điểm gần tọa độ | ❌ |
 | `GET` | `/locations/{uuid}/memories` | Kỷ niệm tại địa điểm | ❌ |
 
@@ -30,31 +31,23 @@ http://localhost:8222/api/v1
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `GET` | `/memories` | Danh sách kỷ niệm (có filters) | ❌ |
+| `GET` | `/memories` | Danh sách kỷ niệm (có filters) | ✅ |
 | `POST` | `/memories` | Tạo kỷ niệm mới | ✅ |
-| `GET` | `/memories/{uuid}` | Chi tiết kỷ niệm | ❌ |
+| `GET` | `/memories/{uuid}` | Chi tiết kỷ niệm | ✅ |
 | `PUT` | `/memories/{uuid}` | Cập nhật kỷ niệm (owner only) | ✅ |
 | `DELETE` | `/memories/{uuid}` | Xóa kỷ niệm (owner only) | ✅ |
-| `GET` | `/memories/{memory_uuid}/media` | Media của kỷ niệm | ❌ |
+| `GET` | `/memories/{memory_uuid}/media` | Media của kỷ niệm | ✅ |
 
 ## Media Endpoints
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | `POST` | `/media/upload` | Upload hình ảnh/video | ✅ |
-| `GET` | `/media` | Danh sách media (có filters) | ❌ |
-| `GET` | `/media/{uuid}` | Thông tin media | ❌ |
+| `GET` | `/media` | Danh sách media (có filters) | ✅ |
+| `GET` | `/media/{uuid}` | Thông tin media | ✅ |
 | `GET` | `/media/{uuid}/file` | Tải file media | ❌ |
 | `PUT` | `/media/{uuid}` | Cập nhật media (owner only) | ✅ |
 | `DELETE` | `/media/{uuid}` | Xóa media (owner only) | ✅ |
-
-## Admin Endpoints
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `DELETE` | `/admin/locations/{uuid}` | Xóa địa điểm | ✅ Admin |
-| `GET` | `/admin/memories` | Tất cả kỷ niệm | ✅ Admin |
-| `GET` | `/admin/media` | Tất cả media | ✅ Admin |
 
 ## Health Check
 
@@ -134,7 +127,7 @@ Authorization: Bearer <your-jwt-token>
 
 ### Admin Access
 - Email admin: `admin@mapmemories.com` hoặc `administrator@mapmemories.com`
-- Chỉ admin mới có thể xóa locations và truy cập admin endpoints
+- Chỉ admin mới có thể xóa locations
 
 ---
 
@@ -206,8 +199,8 @@ curl -X POST http://localhost:8222/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 
-# Get public memories
-curl http://localhost:8222/api/v1/memories?is_public=true&limit=5
+# Get locations
+curl http://localhost:8222/api/v1/locations?limit=5
 
 # Search nearby locations
 curl "http://localhost:8222/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=5"

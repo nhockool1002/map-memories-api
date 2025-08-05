@@ -19,6 +19,8 @@ func SetupRoutes(r *gin.Engine) {
 	memoryController := &controllers.MemoryController{}
 	locationController := &controllers.LocationController{}
 	mediaController := &controllers.MediaController{}
+	shopController := &controllers.ShopController{}
+	currencyController := &controllers.CurrencyController{}
 
 	// CORS middleware
 	r.Use(middleware.CORSMiddleware())
@@ -79,6 +81,13 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				media.GET("/:uuid/file", mediaController.ServeMediaFile)
 			}
+
+			// Public shop (browse items)
+			shop := public.Group("shop")
+			{
+				shop.GET("/items", shopController.GetShopItems)
+				shop.GET("/items/:uuid", shopController.GetShopItem)
+			}
 		}
 
 		// Protected routes (authentication required)
@@ -107,7 +116,7 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				locations.POST("", locationController.CreateLocation)
 				locations.PUT("/:uuid", locationController.UpdateLocation)
-				// Delete is admin only - will be added below
+				locations.DELETE("/:uuid", locationController.DeleteLocation)
 			}
 
 			// Media management
@@ -119,6 +128,20 @@ func SetupRoutes(r *gin.Engine) {
 				media.PUT("/:uuid", mediaController.UpdateMedia)
 				media.DELETE("/:uuid", mediaController.DeleteMedia)
 			}
+
+			// Shop management (user)
+			shop := protected.Group("shop")
+			{
+				shop.POST("/purchase", shopController.PurchaseItem)
+				shop.GET("/my-items", shopController.GetUserItems)
+			}
+
+			// Currency management (user)
+			currency := protected.Group("currency")
+			{
+				currency.GET("/balance", currencyController.GetBalance)
+				currency.GET("/history", currencyController.GetMyTransactionHistory)
+			}
 		}
 
 		// Admin routes (admin access required)
@@ -126,12 +149,6 @@ func SetupRoutes(r *gin.Engine) {
 		admin.Use(middleware.AuthMiddleware())
 		admin.Use(middleware.AdminMiddleware())
 		{
-			// Admin location management
-			locations := admin.Group("locations")
-			{
-				locations.DELETE("/:uuid", locationController.DeleteLocation)
-			}
-
 			// Admin can access all memories
 			memories := admin.Group("memories")
 			{
@@ -143,8 +160,29 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				media.GET("", mediaController.GetMedia) // All media
 			}
+
+			// Admin shop management
+			shop := admin.Group("shop")
+			{
+				shop.POST("/items", shopController.CreateShopItem)
+				shop.PUT("/items/:uuid", shopController.UpdateShopItem)
+				shop.DELETE("/items/:uuid", shopController.DeleteShopItem)
+			}
+
+			// Admin currency management
+			currency := admin.Group("currency")
+			{
+				currency.POST("/add", currencyController.AdminAddCurrency)
+				currency.POST("/subtract", currencyController.AdminSubtractCurrency)
+				currency.GET("/history", currencyController.GetTransactionHistory)
+			}
 		}
 	}
+
+	// Static file serving for media
+	mediaGroup := r.Group("/media")
+	mediaGroup.Use(middleware.CORSMiddleware())
+	mediaGroup.Static("", "/Users/mac/Project/Self/map-memories-api/media")
 
 	// Swagger documentation
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

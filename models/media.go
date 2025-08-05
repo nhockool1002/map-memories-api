@@ -38,7 +38,7 @@ type MediaResponse struct {
 	MimeType         string    `json:"mime_type"`
 	MediaType        string    `json:"media_type"`
 	DisplayOrder     int       `json:"display_order"`
-	URL              string    `json:"url"` // Full URL for accessing the file
+	URL              string    `json:"url"`                     // Full URL for accessing the file
 	ThumbnailURL     string    `json:"thumbnail_url,omitempty"` // For images/videos
 	CreatedAt        time.Time `json:"created_at"`
 }
@@ -50,12 +50,12 @@ func (m *Media) ToResponse() MediaResponse {
 		UUID:             m.UUID,
 		Filename:         m.Filename,
 		OriginalFilename: m.OriginalFilename,
-		FilePath:         m.FilePath,
+		FilePath:         m.FilePath, // This now contains base64 data URL
 		FileSize:         m.FileSize,
 		MimeType:         m.MimeType,
 		MediaType:        m.MediaType,
 		DisplayOrder:     m.DisplayOrder,
-		URL:              "/api/v1/media/" + m.UUID.String(),
+		URL:              "/api/v1/media/" + m.UUID.String() + "/file",
 		CreatedAt:        m.CreatedAt,
 	}
 }

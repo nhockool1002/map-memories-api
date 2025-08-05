@@ -12,8 +12,8 @@ import (
 
 	"map-memories-api/config"
 	"map-memories-api/database"
-	"map-memories-api/routes"
 	_ "map-memories-api/docs"
+	"map-memories-api/routes"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,27 +21,27 @@ import (
 // @title Map Memories API
 // @version 1.0
 // @description API để quản lý kỷ niệm và địa điểm trên bản đồ
-// @description 
+// @description
 // @description Ứng dụng Map Memories cho phép người dùng:
 // @description - Đăng ký và xác thực tài khoản
 // @description - Tạo và quản lý địa điểm trên bản đồ
 // @description - Viết và chia sẻ kỷ niệm tại các địa điểm
 // @description - Upload hình ảnh và video cho kỷ niệm
 // @description - Tìm kiếm địa điểm và kỷ niệm gần đó
-// @description 
+// @description
 // @description ## Xác thực
 // @description API sử dụng JWT Bearer token để xác thực. Để truy cập các endpoint được bảo vệ:
 // @description 1. Đăng ký tài khoản hoặc đăng nhập để nhận token
 // @description 2. Thêm token vào header: `Authorization: Bearer <your-token>`
-// @description 
+// @description
 // @description ## Rate Limiting
 // @description API có giới hạn 60 requests/phút cho mỗi IP
-// @description 
+// @description
 // @description ## File Upload
 // @description - Hỗ trợ upload hình ảnh: JPEG, PNG, GIF
 // @description - Hỗ trợ upload video: MP4, AVI, MOV
 // @description - Kích thước file tối đa: 50MB
-// @description 
+// @description
 // @description ## Geospatial Features
 // @description - Tìm kiếm địa điểm trong bán kính từ tọa độ
 // @description - Sử dụng PostGIS để tính toán khoảng cách chính xác
@@ -73,6 +73,55 @@ import (
 // @tag.name Media
 // @tag.description Upload và quản lý hình ảnh, video
 
+// @tag.name Shop
+// @tag.description Quản lý cửa hàng và mua sắm items
+
+// @tag.name Currency
+// @tag.description Quản lý tiền tệ và giao dịch
+
+// runCustomMigrations runs custom database migrations
+func runCustomMigrations() {
+	log.Println("Running custom migrations...")
+
+	// Check if location_id column in mm_memories table allows NULL
+	var locationIdNullable bool
+	err := database.DB.Raw(`
+		SELECT is_nullable = 'YES' 
+		FROM information_schema.columns 
+		WHERE table_name = 'mm_memories' 
+		AND column_name = 'location_id'
+	`).Scan(&locationIdNullable).Error
+
+	if err != nil {
+		log.Printf("Error checking location_id column: %v", err)
+		return
+	}
+
+	if !locationIdNullable {
+		log.Println("Updating location_id column in mm_memories table to allow NULL...")
+
+		// Drop NOT NULL constraint
+		if err := database.DB.Exec(`
+			ALTER TABLE mm_memories ALTER COLUMN location_id DROP NOT NULL
+		`).Error; err != nil {
+			log.Printf("Error dropping NOT NULL constraint: %v", err)
+			return
+		}
+
+		// Add index
+		if err := database.DB.Exec(`
+			CREATE INDEX IF NOT EXISTS idx_mm_memories_location_id ON mm_memories(location_id)
+		`).Error; err != nil {
+			log.Printf("Error creating index: %v", err)
+			return
+		}
+
+		log.Println("Successfully updated location_id column in mm_memories table")
+	} else {
+		log.Println("location_id column already allows NULL in mm_memories table")
+	}
+}
+
 func main() {
 	// Load configuration
 	config.LoadConfig()
@@ -88,6 +137,9 @@ func main() {
 
 	// Run database migrations
 	database.AutoMigrate()
+
+	// Run custom migrations
+	runCustomMigrations()
 
 	// Run database seeding
 	database.SeedData()
@@ -122,7 +174,7 @@ func main() {
 		log.Printf("Starting Map Memories API server on %s", server.Addr)
 		log.Printf("Environment: %s", config.AppConfig.Environment)
 		log.Printf("Swagger documentation available at: http://%s/swagger/index.html", server.Addr)
-		
+
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}

@@ -12,6 +12,9 @@ import (
 
 	"map-memories-api/config"
 
+	"encoding/base64"
+	"mime"
+
 	"github.com/google/uuid"
 )
 
@@ -74,7 +77,7 @@ func SaveUploadedFile(file *multipart.FileHeader) (*FileInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file for MIME type detection: %w", err)
 	}
-	
+
 	// Reset file pointer
 	_, err = src.Seek(0, io.SeekStart)
 	if err != nil {
@@ -82,7 +85,7 @@ func SaveUploadedFile(file *multipart.FileHeader) (*FileInfo, error) {
 	}
 
 	mimeType := DetectMimeType(buffer, file.Filename)
-	
+
 	// Check if file type is allowed
 	if !IsAllowedFileType(mimeType) {
 		return nil, fmt.Errorf("file type %s is not allowed", mimeType)
@@ -90,7 +93,7 @@ func SaveUploadedFile(file *multipart.FileHeader) (*FileInfo, error) {
 
 	// Generate unique filename
 	filename := GenerateUniqueFilename(file.Filename)
-	
+
 	// Create upload directory if it doesn't exist
 	uploadPath := config.AppConfig.Upload.Path
 	if err := os.MkdirAll(uploadPath, 0755); err != nil {
@@ -117,6 +120,65 @@ func SaveUploadedFile(file *multipart.FileHeader) (*FileInfo, error) {
 		OriginalFilename: file.Filename,
 		Filename:         filename,
 		FilePath:         filePath,
+		FileSize:         file.Size,
+		MimeType:         mimeType,
+		MediaType:        GetMediaType(mimeType),
+	}, nil
+}
+
+// SaveUploadedFileAsBase64 saves an uploaded file as base64 string
+func SaveUploadedFileAsBase64(file *multipart.FileHeader) (*FileInfo, error) {
+	// Check file size
+	if file.Size > config.AppConfig.Upload.MaxFileSizeInt {
+		return nil, fmt.Errorf("file size exceeds maximum allowed size of %s", config.AppConfig.Upload.MaxFileSize)
+	}
+
+	// Open the uploaded file
+	src, err := file.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open uploaded file: %w", err)
+	}
+	defer src.Close()
+
+	// Detect MIME type
+	buffer := make([]byte, 512)
+	_, err = src.Read(buffer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file for MIME type detection: %w", err)
+	}
+
+	// Reset file pointer
+	_, err = src.Seek(0, io.SeekStart)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reset file pointer: %w", err)
+	}
+
+	mimeType := DetectMimeType(buffer, file.Filename)
+
+	// Check if file type is allowed
+	if !IsAllowedFileType(mimeType) {
+		return nil, fmt.Errorf("file type %s is not allowed", mimeType)
+	}
+
+	// Read file content for base64 conversion
+	fileContent, err := io.ReadAll(src)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file content: %w", err)
+	}
+
+	// Convert to base64
+	base64Str := base64.StdEncoding.EncodeToString(fileContent)
+
+	// Create data URL format
+	dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Str)
+
+	// Generate unique filename for reference
+	filename := GenerateUniqueFilename(file.Filename)
+
+	return &FileInfo{
+		OriginalFilename: file.Filename,
+		Filename:         filename,
+		FilePath:         dataURL, // Store base64 data URL instead of file path
 		FileSize:         file.Size,
 		MimeType:         mimeType,
 		MediaType:        GetMediaType(mimeType),
@@ -198,7 +260,7 @@ func ValidateImageFile(file *multipart.FileHeader) error {
 	// Check file extension
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	allowedExts := []string{".jpg", ".jpeg", ".png", ".gif"}
-	
+
 	isValidExt := false
 	for _, allowedExt := range allowedExts {
 		if ext == allowedExt {
@@ -206,7 +268,7 @@ func ValidateImageFile(file *multipart.FileHeader) error {
 			break
 		}
 	}
-	
+
 	if !isValidExt {
 		return fmt.Errorf("invalid file extension: %s", ext)
 	}
@@ -224,7 +286,7 @@ func ValidateVideoFile(file *multipart.FileHeader) error {
 	// Check file extension
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	allowedExts := []string{".mp4", ".avi", ".mov"}
-	
+
 	isValidExt := false
 	for _, allowedExt := range allowedExts {
 		if ext == allowedExt {
@@ -232,10 +294,95 @@ func ValidateVideoFile(file *multipart.FileHeader) error {
 			break
 		}
 	}
-	
+
 	if !isValidExt {
 		return fmt.Errorf("invalid file extension: %s", ext)
 	}
 
 	return nil
+}
+
+// FileToBase64 converts a file to base64 string with data URL format
+func FileToBase64(filePath string) (string, error) {
+	// Read file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	// Read file content
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %v", err)
+	}
+
+	// Get MIME type
+	ext := strings.ToLower(filepath.Ext(filePath))
+	mimeType := mime.TypeByExtension(ext)
+	if mimeType == "" {
+		// Default to image/png if MIME type not found
+		mimeType = "image/png"
+	}
+
+	// Convert to base64
+	base64Str := base64.StdEncoding.EncodeToString(content)
+
+	// Return as data URL
+	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64Str), nil
+}
+
+// Base64ToDataURL converts base64 string to data URL format
+func Base64ToDataURL(base64Str, mimeType string) string {
+	if mimeType == "" {
+		mimeType = "image/png"
+	}
+	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64Str)
+}
+
+// ImageToBase64 converts an image file to base64 string
+func ImageToBase64(filePath string) (string, error) {
+	// Read the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	// Read file content
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %v", err)
+	}
+
+	// Get MIME type
+	ext := strings.ToLower(filepath.Ext(filePath))
+	var mimeType string
+	switch ext {
+	case ".png":
+		mimeType = "image/png"
+	case ".jpg", ".jpeg":
+		mimeType = "image/jpeg"
+	case ".gif":
+		mimeType = "image/gif"
+	case ".webp":
+		mimeType = "image/webp"
+	default:
+		mimeType = mime.TypeByExtension(ext)
+		if mimeType == "" {
+			mimeType = "image/png" // Default fallback
+		}
+	}
+
+	// Encode to base64
+	base64Str := base64.StdEncoding.EncodeToString(bytes)
+
+	// Return with data URL format
+	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64Str), nil
+}
+
+// GetMarkerBase64 returns base64 string for marker images
+func GetMarkerBase64(markerNumber int) (string, error) {
+	markerPath := fmt.Sprintf("media/markers/marker%d.png", markerNumber)
+	return ImageToBase64(markerPath)
 }

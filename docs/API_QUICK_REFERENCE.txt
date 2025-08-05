@@ -1,120 +1,195 @@
 MAP MEMORIES API - QUICK REFERENCE
-===================================
+====================================
 
-BASE URL: http://localhost:8222/api/v1
-AUTH: Bearer Token (JWT)
-
-================================================================================
-ESSENTIAL ENDPOINTS
-================================================================================
-
-AUTHENTICATION:
-POST /auth/register - Register new user
-POST /auth/login - Login user
-GET /auth/profile - Get user profile (Auth required)
-PUT /auth/profile - Update user profile (Auth required)
-POST /auth/logout - Logout user (Auth required)
-
-LOCATIONS:
-GET /locations - Get all locations (Public)
-GET /locations/{uuid} - Get location by UUID (Public)
-GET /locations/nearby - Search nearby locations (Public)
-POST /locations - Create location (Auth required)
-PUT /locations/{uuid} - Update location (Auth required)
-
-MEMORIES:
-GET /memories - Get public memories (Public)
-GET /memories/{uuid} - Get memory by UUID (Auth required)
-POST /memories - Create memory (Auth required)
-PUT /memories/{uuid} - Update memory (Auth required)
-DELETE /memories/{uuid} - Delete memory (Auth required)
-
-MEDIA:
-GET /media - Get media files (Auth required)
-POST /media/upload - Upload media (Auth required)
-GET /media/{uuid}/file - Serve media file (Public)
+Base URL: http://localhost:8222/api/v1
+Authentication: Bearer Token (JWT)
 
 ================================================================================
-AUTHENTICATION FLOW
+AUTHENTICATION ENDPOINTS
 ================================================================================
 
-1. Register: POST /auth/register
-   {
-     "username": "user123",
-     "email": "user@example.com",
-     "password": "password123",
-     "full_name": "John Doe"
-   }
+POST /auth/register
+- Register new user
+- Body: {username, email, password, full_name}
+- Response: 201 + user (with user_items) + token
 
-2. Login: POST /auth/login
-   {
-     "email": "user@example.com",
-     "password": "password123"
-   }
+POST /auth/login  
+- Login user
+- Body: {email, password}
+- Response: 200 + user (with user_items) + token
 
-3. Use token in headers:
-   Authorization: Bearer <jwt_token>
+GET /auth/profile
+- Get user profile (Auth required)
+- Response: 200 + user data (with user_items)
+
+PUT /auth/profile
+- Update user profile (Auth required)
+- Body: {full_name?, avatar_url?}
+- Response: 200 + updated user (with user_items)
+
+POST /auth/logout
+- Logout user (Auth required)
+- Response: 200 + success message
 
 ================================================================================
-COMMON REQUEST FORMATS
+LOCATION ENDPOINTS
 ================================================================================
 
-CREATE LOCATION:
+GET /locations
+- Get paginated locations (Public)
+- Query: page, limit, search, country, city
+- Response: 200 + locations + pagination
+
 POST /locations
-{
-  "name": "Ho Chi Minh City",
-  "description": "Beautiful city in Vietnam",
-  "latitude": 10.8231,
-  "longitude": 106.6297,
-  "address": "Ho Chi Minh City, Vietnam",
-  "country": "Vietnam",
-  "city": "Ho Chi Minh City"
-}
+- Create location (Auth required)
+- Body: {name, latitude, longitude, description?, address?, country?, city?}
+- Response: 201 + location
 
-CREATE MEMORY:
+GET /locations/{uuid}
+- Get location by UUID (Public)
+- Response: 200 + location
+
+PUT /locations/{uuid}
+- Update location (Auth required)
+- Body: {name?, description?, latitude?, longitude?, address?, country?, city?}
+- Response: 200 + updated location
+
+DELETE /locations/{uuid}
+- Delete location (Admin only)
+- Response: 200 + success message
+
+GET /locations/nearby
+- Search nearby locations (Public)
+- Query: latitude, longitude, radius?, limit?
+- Response: 200 + locations
+
+GET /locations/{uuid}/memories
+- Get memories for location (Public)
+- Query: page, limit, is_public?
+- Response: 200 + memories + pagination
+
+================================================================================
+MEMORY ENDPOINTS
+================================================================================
+
+GET /memories
+- Get paginated memories (Auth required)
+- Query: page, limit, user_id?, location_id?, is_public?, search, tags, sort_by, sort_order
+- Response: 200 + memories + pagination
+
 POST /memories
-{
-  "title": "Amazing trip to Saigon",
-  "content": "Had a wonderful time exploring the city...",
-  "location_id": 1,
-  "visit_date": "2024-01-15",
-  "is_public": true,
-  "tags": ["travel", "vietnam", "saigon"]
-}
+- Create memory (Auth required)
+- Body: {title, content, location_id, visit_date?, is_public?, tags?}
+- Response: 201 + memory
 
-UPLOAD MEDIA:
+GET /memories/{uuid}
+- Get memory by UUID (Auth required)
+- Response: 200 + memory
+
+PUT /memories/{uuid}
+- Update memory (Owner only)
+- Body: {title?, content?, visit_date?, is_public?, tags?}
+- Response: 200 + updated memory
+
+DELETE /memories/{uuid}
+- Delete memory (Owner only)
+- Response: 200 + success message
+
+GET /memories/{uuid}/media
+- Get memory media (Auth required)
+- Response: 200 + media list
+
+================================================================================
+MEDIA ENDPOINTS
+================================================================================
+
+GET /media
+- Get paginated media (Auth required)
+- Query: page, limit, memory_id?, media_type?
+- Response: 200 + media + pagination
+
 POST /media/upload
-Content-Type: multipart/form-data
-- memory_id: 1
-- file: [file]
-- display_order: 1
+- Upload media file (Auth required)
+- Content-Type: multipart/form-data
+- Form: memory_id, file, display_order?
+- Response: 201 + media
+
+GET /media/{uuid}
+- Get media by UUID (Auth required)
+- Response: 200 + media
+
+PUT /media/{uuid}
+- Update media (Owner only)
+- Body: {display_order?}
+- Response: 200 + updated media
+
+DELETE /media/{uuid}
+- Delete media (Owner only)
+- Response: 200 + success message
+
+GET /media/{uuid}/file
+- Serve media file (Public)
+- Response: 200 + file content
 
 ================================================================================
-COMMON RESPONSE FORMAT
+QUERY PARAMETERS
 ================================================================================
 
-SUCCESS:
+Pagination:
+- page (int, default: 1)
+- limit (int, default: 20, max: 100)
+
+Location Filters:
+- search (string) - Search in name/description
+- country (string) - Filter by country
+- city (string) - Filter by city
+
+Memory Filters:
+- user_id (int) - Filter by user
+- location_id (int) - Filter by location
+- is_public (bool) - Filter by public status
+- search (string) - Search in title/content
+- tags (string) - Comma-separated tags
+- sort_by (string) - created_at, visit_date, title
+- sort_order (string) - asc, desc
+
+Media Filters:
+- memory_id (int) - Filter by memory
+- media_type (string) - image, video
+
+Geospatial Search:
+- latitude (float, required) - -90 to 90
+- longitude (float, required) - -180 to 180
+- radius (float, default: 10) - 0 to 100 km
+- limit (int, default: 20) - 1 to 100
+
+================================================================================
+REQUEST/RESPONSE FORMATS
+================================================================================
+
+Success Response:
 {
   "success": true,
-  "message": "Operation successful",
-  "data": { ... }
+  "message": "string",
+  "data": {...}
 }
 
-ERROR:
+Error Response:
 {
   "success": false,
-  "message": "Error message",
+  "message": "string",
   "error": {
     "code": "ERROR_CODE",
-    "message": "Detailed error message"
+    "message": "string",
+    "details": {...}
   }
 }
 
-PAGINATED RESPONSE:
+Pagination Response:
 {
   "success": true,
-  "message": "Data retrieved successfully",
-  "data": [ ... ],
+  "message": "string",
+  "data": [...],
   "pagination": {
     "current_page": 1,
     "per_page": 20,
@@ -126,90 +201,103 @@ PAGINATED RESPONSE:
 }
 
 ================================================================================
-QUERY PARAMETERS
+HTTP STATUS CODES
 ================================================================================
 
-PAGINATION:
-- page: integer (default: 1)
-- limit: integer (default: 20, max: 100)
+200 OK - Success
+201 Created - Resource created
+204 No Content - Success (no body)
 
-SEARCH:
-- search: string (search in text fields)
+400 Bad Request - Validation error
+401 Unauthorized - Authentication required
+403 Forbidden - Access denied
+404 Not Found - Resource not found
+409 Conflict - Resource conflict
+413 Payload Too Large - File too large
+422 Unprocessable Entity - Validation errors
 
-FILTERS:
-- is_public: boolean (memories)
-- media_type: string (image, video)
-- country: string (locations)
-- city: string (locations)
-- tags: string (comma-separated)
-
-SORTING:
-- sort_by: string (created_at, visit_date, title)
-- sort_order: string (asc, desc)
-
-GEOGRAPHIC:
-- latitude: number (required for nearby search)
-- longitude: number (required for nearby search)
-- radius: number (km, default: 10, max: 100)
+500 Internal Server Error - Server error
+503 Service Unavailable - Service unavailable
 
 ================================================================================
-ERROR CODES
+AUTHENTICATION
 ================================================================================
 
-400 - Bad Request (Validation errors)
-401 - Unauthorized (Invalid/missing token)
-403 - Forbidden (Insufficient permissions)
-404 - Not Found (Resource not found)
-409 - Conflict (Resource already exists)
-413 - Request Entity Too Large (File too big)
-500 - Internal Server Error
+JWT Bearer Token:
+- Header: Authorization: Bearer <token>
+- Token expires: 24 hours
+- Admin emails: admin@mapmemories.com, administrator@mapmemories.com
 
 ================================================================================
 FILE UPLOAD
 ================================================================================
 
-SUPPORTED FORMATS:
+Supported Formats:
 - Images: JPEG, PNG, GIF
 - Videos: MP4, AVI, MOV
 - Max size: 50MB
 
-UPLOAD PROCESS:
-1. Use multipart/form-data
-2. Include memory_id
-3. Optional display_order
-4. File will be processed and stored
+Upload Process:
+- POST to /media/upload
+- Content-Type: multipart/form-data
+- Include memory_id and file
+- Optional: display_order
 
 ================================================================================
-DEVELOPMENT TIPS
+RATE LIMITING
 ================================================================================
 
-1. Always include Authorization header for protected endpoints
-2. Handle pagination for list endpoints
-3. Use proper Content-Type headers
-4. Handle file uploads with multipart/form-data
-5. Implement error handling for all responses
-6. Use query parameters for filtering and searching
-7. Store JWT token securely (localStorage/sessionStorage)
-8. Implement token refresh logic
-9. Handle CORS properly
-10. Test with Swagger UI at /swagger/index.html
+- 60 requests per minute per IP
+- Burst limit: 10 requests
+- Response: 429 Too Many Requests
 
 ================================================================================
-DEFAULT ADMIN USER
+ERROR CODES
 ================================================================================
 
-Username: admin
-Password: admin
-Email: admin@map-memories.com
-
-Use this for testing admin features.
+VALIDATION_ERROR - Field validation failed
+UNAUTHORIZED - Invalid or expired token
+FORBIDDEN - No permission to access resource
+NOT_FOUND - Resource not found
+CONFLICT - Resource already exists
+FILE_TOO_LARGE - File exceeds 50MB limit
+INTERNAL_ERROR - Unexpected server error
+RATE_LIMIT_EXCEEDED - Too many requests
 
 ================================================================================
-SWAGGER DOCUMENTATION
+SAMPLE REQUESTS
 ================================================================================
 
-Interactive API documentation available at:
-http://localhost:8222/swagger/index.html
+# Register user
+curl -X POST http://localhost:8222/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","email":"test@example.com","password":"password123"}'
+
+# Login
+curl -X POST http://localhost:8222/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+
+# Create location
+curl -X POST http://localhost:8222/api/v1/locations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"Test Location","latitude":21.0285,"longitude":105.8542}'
+
+# Create memory
+curl -X POST http://localhost:8222/api/v1/memories \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"location_id":1,"title":"Test Memory","content":"Test content"}'
+
+# Upload media
+curl -X POST http://localhost:8222/api/v1/media/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "memory_id=1" \
+  -F "file=@image.jpg"
+
+# Search nearby locations
+curl "http://localhost:8222/api/v1/locations/nearby?latitude=21.0285&longitude=105.8542&radius=5"
 
 ================================================================================
 END OF QUICK REFERENCE

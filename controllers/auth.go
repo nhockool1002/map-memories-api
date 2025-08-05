@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -30,7 +31,7 @@ type AuthController struct{}
 // @Router /auth/register [post]
 func (ac *AuthController) Register(c *gin.Context) {
 	var req models.UserRegistrationRequest
-	
+
 	if err := utils.ValidateAndBindJSON(c, &req); err != nil {
 		return
 	}
@@ -68,6 +69,16 @@ func (ac *AuthController) Register(c *gin.Context) {
 	if err := database.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
 			"Failed to create user",
+			"INTERNAL_ERROR",
+			err.Error(),
+		))
+		return
+	}
+
+	// Reload user with user items for response
+	if err := database.DB.Preload("UserItems.ShopItem").First(&user, user.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponseWithCode(
+			"Failed to load user data",
 			"INTERNAL_ERROR",
 			err.Error(),
 		))
@@ -113,14 +124,14 @@ func (ac *AuthController) Register(c *gin.Context) {
 // @Router /auth/login [post]
 func (ac *AuthController) Login(c *gin.Context) {
 	var req models.UserLoginRequest
-	
+
 	if err := utils.ValidateAndBindJSON(c, &req); err != nil {
 		return
 	}
 
-	// Find user by email
+	// Find user by email with user items
 	var user models.User
-	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+	if err := database.DB.Preload("UserItems.ShopItem").Where("email = ?", req.Email).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusUnauthorized, models.ErrorResponseWithCode(
 				"Invalid email or password",
@@ -135,6 +146,12 @@ func (ac *AuthController) Login(c *gin.Context) {
 			nil,
 		))
 		return
+	}
+
+	// Debug: Log user items count and details
+	fmt.Printf("User %d has %d user items\n", user.ID, len(user.UserItems))
+	for i, item := range user.UserItems {
+		fmt.Printf("  Item %d: ID=%d, Quantity=%d, ShopItemID=%d\n", i, item.ID, item.Quantity, item.ShopItemID)
 	}
 
 	// Verify password
@@ -159,8 +176,13 @@ func (ac *AuthController) Login(c *gin.Context) {
 	}
 
 	// Create response
+	userResponse := user.ToResponse()
+
+	// Debug: Log user items count
+	fmt.Printf("User %d has %d user items\n", user.ID, len(user.UserItems))
+
 	authResponse := models.AuthResponse{
-		User:        user.ToResponse(),
+		User:        userResponse,
 		AccessToken: token,
 		TokenType:   "Bearer",
 		ExpiresIn:   int64(time.Hour * 24 / time.Second), // 24 hours in seconds
@@ -194,7 +216,7 @@ func (ac *AuthController) GetProfile(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := database.DB.Preload("UserItems.ShopItem").First(&user, userID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"User not found",
@@ -246,9 +268,9 @@ func (ac *AuthController) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	// Find user
+	// Find user with user items
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := database.DB.Preload("UserItems.ShopItem").First(&user, userID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponseWithCode(
 				"User not found",
@@ -302,7 +324,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	// In a real application, you would invalidate the token
 	// For now, we'll just return a success response
 	// You could add token blacklisting here
-	
+
 	c.JSON(http.StatusOK, models.SuccessResponse(
 		"Logout successful",
 		nil,
@@ -312,14 +334,14 @@ func (ac *AuthController) Logout(c *gin.Context) {
 // TestAuthHeader tests the authorization header format
 func (ac *AuthController) TestAuthHeader(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Authorization header received",
 		"data": gin.H{
-			"auth_header": authHeader,
+			"auth_header":       authHeader,
 			"has_bearer_prefix": strings.HasPrefix(authHeader, "Bearer "),
-			"header_length": len(authHeader),
+			"header_length":     len(authHeader),
 		},
 	})
 }
